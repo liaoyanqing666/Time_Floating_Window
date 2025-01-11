@@ -1,0 +1,5 @@
+build/
+dist/
+*.json
+*.spec
+.idea/
