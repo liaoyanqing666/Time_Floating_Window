@@ -8,7 +8,7 @@ import locale
 import ctypes
 import sys
 
-class FloatingClockApp:
+class FloatingClockApp():
     def __init__(self):
         self.config_file = "TimeWindowSettings.json"
         self.load_settings()
@@ -19,10 +19,11 @@ class FloatingClockApp:
         self.screen_height = self.root.winfo_screenheight()
         self.settings.setdefault("max_width", self.screen_width)
         self.settings.setdefault("max_height", self.screen_height)
+        self.settings_window = None  # To track if settings window is open
         self.create_window()
 
     def load_settings(self):
-        # load settings from file or use defaults
+        # Load settings from file or use defaults
         if os.path.exists(self.config_file):
             with open(self.config_file, "r", encoding="utf-8") as f:
                 self.settings = json.load(f)
@@ -31,22 +32,20 @@ class FloatingClockApp:
                 "bg_color": "#000000",
                 "text_color": "#FFFFFF",
                 "bg_opacity": 0.8,
-                "width": 200,
-                "height": 100,
-                "font_family": "Segoe UI",
-                "time_font_size": 18,
+                "width": 180,
+                "height": 60,
+                "font_family": "Consolas",
+                "time_font_size": 17,
                 "icon_size": 10,
                 "is_movable": True,
                 "last_position": None,
                 "time_precision": "seconds",
                 "sync_interval": 1000,
                 "language": "default",
-                "min_width": 120,
-                "min_height": 60,
                 "show_buttons_when_locked": True,
                 "show_buttons_when_unlocked": True,
                 "settings_window_size": None,
-                "settings_window_position": None
+                "settings_window_position": None,
             }
 
     def save_settings(self):
@@ -57,11 +56,11 @@ class FloatingClockApp:
         if self.settings["language"] == "default":
             sys_locale = locale.getdefaultlocale()[0]
             if sys_locale:
-                if sys_locale.startswith("zh"): # if the system language is readable and Chinese
+                if sys_locale.startswith("zh"):  # Chinese
                     self.lang = "zh"
                 # elif sys_locale.startswith("other_languages"):
                 #     self.lang = "ol"
-            else: # default to English
+            else:  # Default to English
                 self.lang = "en"
         else:
             self.lang = self.settings["language"]
@@ -78,14 +77,14 @@ class FloatingClockApp:
                 "seconds": "Seconds",
                 "milliseconds": "Milliseconds",
                 "settings": "Settings",
-                "settings_hw": "450x500",
+                "settings_hw": "465x465",
                 "choose_color": "Choose Color",
                 "lock": "Lock",
                 "unlock": "Unlock",
                 "close": "Close",
                 "time_font_size": "Time Font Size",
                 "icon_font_size": "Icon Font Size",
-                "font_label": "Font(Scroll)",
+                "font_label": "Font (Scroll)",
                 "increase": " + ",
                 "decrease": " - ",
                 "show_buttons_when_locked": "Show Buttons When Locked",
@@ -96,7 +95,8 @@ class FloatingClockApp:
                 "restore_done": "Default settings restored. Please reopen the settings window.",
                 "lang_changed_hint": "Language changed, please reopen settings or restart.",
                 "confirm": "Confirm",
-                "info": "Info"
+                "info": "Info",
+                "lang_switch_confirm": "Are you sure you want to switch to {language}? The application will close."
             },
             "zh": {
                 "language_code": "zh",
@@ -110,7 +110,7 @@ class FloatingClockApp:
                 "seconds": "秒",
                 "milliseconds": "毫秒",
                 "settings": "设置",
-                "settings_hw": "350x450",
+                "settings_hw": "365x460",
                 "choose_color": "选择颜色",
                 "lock": "锁定",
                 "unlock": "解锁",
@@ -128,7 +128,8 @@ class FloatingClockApp:
                 "restore_done": "默认设置已恢复。请重新打开设置窗口。",
                 "lang_changed_hint": "语言已更改，请重新打开设置或重启。",
                 "confirm": "确认",
-                "info": "提示"
+                "info": "提示",
+                "lang_switch_confirm": "确定要切换到{language}语言吗？应用程序将关闭。"
             }
         }
         self.available_languages = [val["lang_label"] for val in self.translations.values()] # get all language labels
@@ -149,7 +150,7 @@ class FloatingClockApp:
             ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x80000)
             ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 2, ctypes.byref(ctypes.c_int(2)), 4)
 
-        # if the window was moved before, apply the position
+        # If the window was moved before, apply the position
         if self.settings["last_position"]:
             self.apply_position_or_center()
         else:
@@ -181,7 +182,7 @@ class FloatingClockApp:
         # Create the close button
         self.close_button = tk.Button(
             self.floating_window,
-            text="❌",
+            text="X",
             command=self.quit_app,
             bg=self.settings["bg_color"],
             fg=self.settings["text_color"],
@@ -250,28 +251,38 @@ class FloatingClockApp:
         menu.post(e.x_root, e.y_root)
 
     def open_settings(self):
-        # Open the settings window
-        sw = tk.Toplevel(self.root)
-        sw.title(self.texts["settings"])
+        # Open the settings window only if it's not already open
+        if self.settings_window and tk.Toplevel.winfo_exists(self.settings_window):
+            self.settings_window.lift()
+            return
+
+        self.settings_window = tk.Toplevel(self.root)
+        self.settings_window.title(self.texts["settings"])
         size = self.settings.get("settings_window_size")
         pos = self.settings.get("settings_window_position")
         if size and pos:
-            sw.geometry(f"{size[0]}x{size[1]}+{pos[0]}+{pos[1]}")
+            self.settings_window.geometry(f"{size[0]}x{size[1]}+{pos[0]}+{pos[1]}")
         else:
             size_hw = self.texts["settings_hw"]
             w, h = map(int, size_hw.split('x'))
-            sw.geometry(f"{w}x{h}+{(self.screen_width - w) // 2}+{(self.screen_height - h) // 2}")
-        sw.attributes("-topmost", True)
+            sw, sh = self.screen_width, self.screen_height
+            x, y = (sw - w) // 2, (sh - h) // 2
+            self.settings_window.geometry(f"{w}x{h}+{x}+{y}")
 
         def on_configure(event):
             # Save when the size or position of the window changes
-            self.settings["settings_window_size"] = [sw.winfo_width(), sw.winfo_height()]
-            self.settings["settings_window_position"] = [sw.winfo_x(), sw.winfo_y()]
+            self.settings["settings_window_size"] = [self.settings_window.winfo_width(), self.settings_window.winfo_height()]
+            self.settings["settings_window_position"] = [self.settings_window.winfo_x(), self.settings_window.winfo_y()]
             self.save_settings()
 
-        sw.bind("<Configure>", on_configure) # bind the event to the window
+        def on_close():
+            self.settings_window.destroy()
+            self.settings_window = None
 
-        cf = ttk.Frame(sw)
+        self.settings_window.bind("<Configure>", on_configure)
+        self.settings_window.protocol("WM_DELETE_WINDOW", on_close)
+
+        cf = ttk.Frame(self.settings_window)
         cv = tk.Canvas(cf)
         sb = ttk.Scrollbar(cf, orient="vertical", command=cv.yview)
         frm = ttk.Frame(cv)
@@ -373,17 +384,25 @@ class FloatingClockApp:
         r += 1
 
         ttk.Label(frm, text=self.texts["width"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
-        ew = ttk.Entry(frm)
-        ew.insert(0, str(self.settings["width"]))
-        ew.grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        ew.bind("<KeyRelease>", lambda e: self.change_width(ew.get()))
+        width_frame = ttk.Frame(frm)
+        width_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        ttk.Button(width_frame, text="-10", command=self.dec_width_by_10).pack(side="left")
+        self.width_entry = ttk.Entry(width_frame, width=6)
+        self.width_entry.insert(0, str(self.settings["width"]))
+        self.width_entry.pack(side="left", padx=5)
+        ttk.Button(width_frame, text="+10", command=self.inc_width_by_10).pack(side="left")
+        self.width_entry.bind("<KeyRelease>", lambda e: self.change_width(self.width_entry.get()))
         r += 1
 
         ttk.Label(frm, text=self.texts["height"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
-        eh = ttk.Entry(frm)
-        eh.insert(0, str(self.settings["height"]))
-        eh.grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        eh.bind("<KeyRelease>", lambda e: self.change_height(eh.get()))
+        height_frame = ttk.Frame(frm)
+        height_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        ttk.Button(height_frame, text="-10", command=self.dec_height_by_10).pack(side="left")
+        self.height_entry = ttk.Entry(height_frame, width=6)
+        self.height_entry.insert(0, str(self.settings["height"]))
+        self.height_entry.pack(side="left", padx=5)
+        ttk.Button(height_frame, text="+10", command=self.inc_height_by_10).pack(side="left")
+        self.height_entry.bind("<KeyRelease>", lambda e: self.change_height(self.height_entry.get()))
         r += 1
 
         ttk.Button(frm, text=self.texts["restore_default"], command=self.restore_default).grid(row=r, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
@@ -397,7 +416,10 @@ class FloatingClockApp:
         # Get the font families and change to the next one
         fonts = sorted(families())
         current = self.settings["font_family"]
-        idx = fonts.index(current) if current in fonts else 0
+        try:
+            idx = fonts.index(current)
+        except ValueError:
+            idx = 0
         if idx < len(fonts) - 1:
             self.change_font(fonts[idx + 1])
 
@@ -405,7 +427,10 @@ class FloatingClockApp:
         # Get the font families and change to the previous one
         fonts = sorted(families())
         current = self.settings["font_family"]
-        idx = fonts.index(current) if current in fonts else 0
+        try:
+            idx = fonts.index(current)
+        except ValueError:
+            idx = 0
         if idx > 0:
             self.change_font(fonts[idx - 1])
 
@@ -419,29 +444,35 @@ class FloatingClockApp:
             self.alpha_entry.delete(0, tk.END)
             self.alpha_entry.insert(0, str(f))
             self.save_settings()
-        except:
+        except ValueError:
             pass
 
     def alpha_entry_apply(self):
         # Apply the opacity value from the entry box
         try:
             f = float(self.alpha_entry.get())
-            self.settings["bg_opacity"] = max(0.05, min(f, 1.0))
-            limited_f = round(self.settings["bg_opacity"], 2)
-            self.floating_window.attributes("-alpha", limited_f)
-            self.alpha_scale.set(limited_f)
+            f = max(self.settings.get("min_opacity", 0.05), min(f, 1.0))
+            f = round(f, 2)
+            self.settings["bg_opacity"] = f
+            self.floating_window.attributes("-alpha", f)
+            self.alpha_scale.set(f)
+            self.alpha_entry.delete(0, tk.END)
+            self.alpha_entry.insert(0, str(f))
             self.save_settings()
-        except:
-            pass
+        except ValueError:
+            # Reset to current setting if invalid
+            self.alpha_entry.delete(0, tk.END)
+            self.alpha_entry.insert(0, str(self.settings["bg_opacity"]))
 
     def restore_default(self):
-        # When the user clicks the Restore default Settings button, the user is asked to confirm the restore
+        # When the user clicks the Restore Default Settings button, confirm and restore
         if messagebox.askyesno(self.texts["confirm"], self.texts["restore_confirm"]):
             if os.path.exists(self.config_file):
                 os.remove(self.config_file)
             self.load_settings()
             self.save_settings()
             messagebox.showinfo(self.texts["info"], self.texts["restore_done"])
+            self.quit_app()
 
     def swbl(self, v):
         self.settings["show_buttons_when_locked"] = v
@@ -524,6 +555,46 @@ class FloatingClockApp:
             self.update_geometry()
             self.save_settings()
 
+    def inc_width_by_10(self):
+        try:
+            current = int(self.width_entry.get())
+        except ValueError:
+            current = self.settings["width"]
+        new_width = current + 10
+        self.width_entry.delete(0, tk.END)
+        self.width_entry.insert(0, str(new_width))
+        self.change_width(str(new_width))
+
+    def dec_width_by_10(self):
+        try:
+            current = int(self.width_entry.get())
+        except ValueError:
+            current = self.settings["width"]
+        new_width = current - 10
+        self.width_entry.delete(0, tk.END)
+        self.width_entry.insert(0, str(new_width))
+        self.change_width(str(new_width))
+
+    def inc_height_by_10(self):
+        try:
+            current = int(self.height_entry.get())
+        except ValueError:
+            current = self.settings["height"]
+        new_height = current + 10
+        self.height_entry.delete(0, tk.END)
+        self.height_entry.insert(0, str(new_height))
+        self.change_height(str(new_height))
+
+    def dec_height_by_10(self):
+        try:
+            current = int(self.height_entry.get())
+        except ValueError:
+            current = self.settings["height"]
+        new_height = current - 10
+        self.height_entry.delete(0, tk.END)
+        self.height_entry.insert(0, str(new_height))
+        self.change_height(str(new_height))
+
     def dec_time_font(self):
         # Decrease the time font size
         if self.settings["time_font_size"] > 8:
@@ -603,7 +674,8 @@ class FloatingClockApp:
         # Update the window geometry
         if self.settings["last_position"]:
             x, y = self.settings["last_position"]
-            self.floating_window.geometry(f'{self.settings["width"]}x{self.settings["height"]}+{x}+{y}')
+            w, h = self.settings["width"], self.settings["height"]
+            self.floating_window.geometry(f'{w}x{h}+{x}+{y}')
         else:
             self.center_window()
 
@@ -627,6 +699,8 @@ class FloatingClockApp:
         # Quit the application
         self.settings["last_position"] = [self.floating_window.winfo_x(), self.floating_window.winfo_y()]
         self.save_settings()
+        if self.settings_window and tk.Toplevel.winfo_exists(self.settings_window):
+            self.settings_window.destroy()
         self.floating_window.destroy()
         self.root.destroy()
 
@@ -634,10 +708,11 @@ class FloatingClockApp:
         # Switch the language by the language label
         found_key = next((k for k, v in self.translations.items() if v["lang_label"] == lb), None)
         if found_key and found_key != self.lang:
-            self.settings["language"] = found_key
-            self.save_settings()
-            msg = self.translations[found_key].get("lang_changed_hint", "Language changed.")
-            messagebox.showinfo(self.texts["info"], msg)
+            confirm_message = self.texts["lang_switch_confirm"].format(language=lb)
+            if messagebox.askyesno(self.texts["confirm"], confirm_message):
+                self.settings["language"] = found_key
+                self.settings["settings_window_size"] = None
+                self.quit_app()
 
     def run(self):
         self.root.mainloop()
