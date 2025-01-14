@@ -315,7 +315,8 @@ class FloatingClockApp:
         self.alpha_entry = ttk.Entry(alpha_frame, width=5)
         self.alpha_entry.insert(0, str(self.settings["bg_opacity"]))
         self.alpha_entry.pack(side="left", padx=5)
-        self.alpha_entry.bind("<KeyRelease>", lambda e: self.alpha_entry_changed())
+        self.alpha_entry.bind("<FocusOut>", lambda e: self.alpha_entry_apply())
+        self.alpha_entry.bind("<Return>", lambda e: self.alpha_entry_apply())
         r += 1
 
         chk_l = tk.BooleanVar(value=self.settings["show_buttons_when_locked"])
@@ -421,14 +422,14 @@ class FloatingClockApp:
         except:
             pass
 
-    def alpha_entry_changed(self):
-        # When the value of the entry widget changes
+    def alpha_entry_apply(self):
+        # Apply the opacity value from the entry box
         try:
-            f = max(0.05, min(float(self.alpha_entry.get()), 1.0))
-            f = round(f, 2)
-            self.settings["bg_opacity"] = f
-            self.floating_window.attributes("-alpha", f)
-            self.alpha_scale.set(f)
+            f = float(self.alpha_entry.get())
+            self.settings["bg_opacity"] = max(0.05, min(f, 1.0))
+            limited_f = round(self.settings["bg_opacity"], 2)
+            self.floating_window.attributes("-alpha", limited_f)
+            self.alpha_scale.set(limited_f)
             self.save_settings()
         except:
             pass
@@ -502,15 +503,15 @@ class FloatingClockApp:
         # Set the time precision and adjust the window size if necessary
         self.settings["time_precision"] = p
         self.settings["sync_interval"] = 100 if p == "milliseconds" else 1000
-        if p == "milliseconds" and self.settings["width"] < 200:
-            self.settings["width"] = 200
+        if p == "milliseconds" and self.settings["width"] < self.min_label_w():
+            self.settings["width"] = self.min_label_w()
             self.update_geometry()
         self.save_settings()
 
     def change_width(self, v):
         # Change the width of the window
         if v.isdigit():
-            w = max(int(v), self.min_label_w(), self.settings["min_width"])
+            w = max(int(v), self.min_label_w())
             self.settings["width"] = min(w, self.settings["max_width"])
             self.update_geometry()
             self.save_settings()
@@ -518,7 +519,7 @@ class FloatingClockApp:
     def change_height(self, v):
         # Change the height of the window
         if v.isdigit():
-            h = max(int(v), self.min_label_h(), self.settings["min_height"])
+            h = max(int(v), self.min_label_h())
             self.settings["height"] = min(h, self.settings["max_height"])
             self.update_geometry()
             self.save_settings()
@@ -615,13 +616,16 @@ class FloatingClockApp:
     def update_time(self):
         # Update the time label
         now = datetime.now()
-        fmt = "%H:%M:%S.%f"[:-3] if self.settings["time_precision"] == "milliseconds" else "%H:%M:%S"
-        self.time_label.config(text=now.strftime(fmt))
+        if self.settings["time_precision"] == "milliseconds":
+            formatted_time = now.strftime("%H:%M:%S.%f")[:-3]
+        else:
+            formatted_time = now.strftime("%H:%M:%S")
+        self.time_label.config(text=formatted_time)
         self.floating_window.after(self.settings["sync_interval"], self.update_time)
 
     def quit_app(self):
         # Quit the application
-        self.settings["last_position"] = (self.floating_window.winfo_x(), self.floating_window.winfo_y())
+        self.settings["last_position"] = [self.floating_window.winfo_x(), self.floating_window.winfo_y()]
         self.save_settings()
         self.floating_window.destroy()
         self.root.destroy()
@@ -636,7 +640,6 @@ class FloatingClockApp:
             messagebox.showinfo(self.texts["info"], msg)
 
     def run(self):
-        self.center_window()
         self.root.mainloop()
 
 if __name__ == "__main__":
