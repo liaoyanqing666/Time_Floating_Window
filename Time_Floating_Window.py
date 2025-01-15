@@ -85,8 +85,6 @@ class FloatingClockApp():
                 "time_font_size": "Time Font Size",
                 "icon_font_size": "Icon Font Size",
                 "font_label": "Font (Scroll)",
-                "increase": " + ",
-                "decrease": " - ",
                 "show_buttons_when_locked": "Show Buttons When Locked",
                 "show_buttons_when_unlocked": "Show Buttons When Unlocked",
                 "lang_switch": "Language",
@@ -118,8 +116,6 @@ class FloatingClockApp():
                 "time_font_size": "时间字体大小",
                 "icon_font_size": "图标大小",
                 "font_label": "字体（滚动选择）",
-                "increase": " + ",
-                "decrease": " - ",
                 "show_buttons_when_locked": "锁定时显示按钮",
                 "show_buttons_when_unlocked": "解锁时显示按钮",
                 "lang_switch": "语言",
@@ -213,10 +209,8 @@ class FloatingClockApp():
 
     def keep_on_top(self):
         # Keep the time window on top
-        self.floating_window.after(1, lambda: (
-            self.floating_window.attributes("-topmost", True),
-            self.floating_window.lift()
-        ))
+        self.floating_window.attributes("-topmost", True)
+        self.floating_window.lift()
 
     def get_lock_icon(self):
         return "🔓" if self.is_movable else "🔒"
@@ -359,19 +353,19 @@ class FloatingClockApp():
         ttk.Label(frm, text=self.texts["time_font_size"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         ftf = ttk.Frame(frm)
         ftf.grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        ttk.Button(ftf, text=self.texts["decrease"], command=self.dec_time_font).pack(side="left")
+        ttk.Button(ftf, text="-1", command=lambda: self.edit_time_font(-1)).pack(side="left")
         self.lbl_time_font = ttk.Label(ftf, text=str(self.settings["time_font_size"]))
         self.lbl_time_font.pack(side="left")
-        ttk.Button(ftf, text=self.texts["increase"], command=self.inc_time_font).pack(side="left")
+        ttk.Button(ftf, text="+1", command=lambda: self.edit_time_font(1)).pack(side="left")
         r += 1
 
         ttk.Label(frm, text=self.texts["icon_font_size"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         fic = ttk.Frame(frm)
         fic.grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        ttk.Button(fic, text=self.texts["decrease"], command=self.dec_icon_size).pack(side="left")
+        ttk.Button(fic, text="-1", command=lambda: self.edit_icon_size(-1)).pack(side="left")
         self.lbl_icon_font = ttk.Label(fic, text=str(self.settings["icon_size"]))
         self.lbl_icon_font.pack(side="left")
-        ttk.Button(fic, text=self.texts["increase"], command=self.inc_icon_size).pack(side="left")
+        ttk.Button(fic, text="+1", command=lambda: self.edit_icon_size(1)).pack(side="left")
         r += 1
 
         pcv = [self.texts["seconds"], self.texts["milliseconds"]]
@@ -385,23 +379,27 @@ class FloatingClockApp():
 
         ttk.Label(frm, text=self.texts["width"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         width_frame = ttk.Frame(frm)
-        width_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        ttk.Button(width_frame, text="-10", command=self.dec_width_by_10).pack(side="left")
         self.width_entry = ttk.Entry(width_frame, width=6)
+        width_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        ttk.Button(width_frame, text="-10", command=lambda: self.edit_width(-10), width=4).pack(side="left")
+        ttk.Button(width_frame, text="-1", command=lambda: self.edit_width(-1), width=4).pack(side="left")
         self.width_entry.insert(0, str(self.settings["width"]))
         self.width_entry.pack(side="left", padx=5)
-        ttk.Button(width_frame, text="+10", command=self.inc_width_by_10).pack(side="left")
+        ttk.Button(width_frame, text="+1", command=lambda: self.edit_width(1), width=4).pack(side="left")
+        ttk.Button(width_frame, text="+10", command=lambda: self.edit_width(10), width=4).pack(side="left")
         self.width_entry.bind("<KeyRelease>", lambda e: self.change_width(self.width_entry.get()))
         r += 1
 
         ttk.Label(frm, text=self.texts["height"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         height_frame = ttk.Frame(frm)
-        height_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        ttk.Button(height_frame, text="-10", command=self.dec_height_by_10).pack(side="left")
         self.height_entry = ttk.Entry(height_frame, width=6)
+        height_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        ttk.Button(height_frame, text="-10", command=lambda: self.edit_height(-10), width=4).pack(side="left")
+        ttk.Button(height_frame, text="-1", command=lambda: self.edit_height(-1), width=4).pack(side="left")
         self.height_entry.insert(0, str(self.settings["height"]))
         self.height_entry.pack(side="left", padx=5)
-        ttk.Button(height_frame, text="+10", command=self.inc_height_by_10).pack(side="left")
+        ttk.Button(height_frame, text="+1", command=lambda: self.edit_height(1), width=4).pack(side="left")
+        ttk.Button(height_frame, text="+10", command=lambda: self.edit_height(10), width=4).pack(side="left")
         self.height_entry.bind("<KeyRelease>", lambda e: self.change_height(self.height_entry.get()))
         r += 1
 
@@ -555,76 +553,41 @@ class FloatingClockApp():
             self.update_geometry()
             self.save_settings()
 
-    def inc_width_by_10(self):
+    def edit_width(self, n):
+        # Edit the width of the window by button
         try:
             current = int(self.width_entry.get())
         except ValueError:
             current = self.settings["width"]
-        new_width = current + 10
+        new_width = current + n
         self.width_entry.delete(0, tk.END)
         self.width_entry.insert(0, str(new_width))
         self.change_width(str(new_width))
 
-    def dec_width_by_10(self):
-        try:
-            current = int(self.width_entry.get())
-        except ValueError:
-            current = self.settings["width"]
-        new_width = current - 10
-        self.width_entry.delete(0, tk.END)
-        self.width_entry.insert(0, str(new_width))
-        self.change_width(str(new_width))
-
-    def inc_height_by_10(self):
+    def edit_height(self, n):
+        # Edit the height of the window by button
         try:
             current = int(self.height_entry.get())
         except ValueError:
             current = self.settings["height"]
-        new_height = current + 10
+        new_height = current + n
         self.height_entry.delete(0, tk.END)
         self.height_entry.insert(0, str(new_height))
         self.change_height(str(new_height))
 
-    def dec_height_by_10(self):
-        try:
-            current = int(self.height_entry.get())
-        except ValueError:
-            current = self.settings["height"]
-        new_height = current - 10
-        self.height_entry.delete(0, tk.END)
-        self.height_entry.insert(0, str(new_height))
-        self.change_height(str(new_height))
-
-    def dec_time_font(self):
-        # Decrease the time font size
-        if self.settings["time_font_size"] > 8:
-            self.settings["time_font_size"] -= 1
+    def edit_time_font(self, n):
+        # Edit the time font size
+        if 8 < self.settings["time_font_size"] < 72:
+            self.settings["time_font_size"] += n
             self.lbl_time_font.config(text=str(self.settings["time_font_size"]))
             self.time_label.config(font=(self.settings["font_family"], self.settings["time_font_size"]))
             self.save_settings()
             self.check_size_for_font_change()
 
-    def inc_time_font(self):
-        # Increase the time font size
-        if self.settings["time_font_size"] < 72:
-            self.settings["time_font_size"] += 1
-            self.lbl_time_font.config(text=str(self.settings["time_font_size"]))
-            self.time_label.config(font=(self.settings["font_family"], self.settings["time_font_size"]))
-            self.save_settings()
-            self.check_size_for_font_change()
-
-    def dec_icon_size(self):
-        # Decrease the icon font size
-        if self.settings["icon_size"] > 8:
-            self.settings["icon_size"] -= 1
-            self.lbl_icon_font.config(text=str(self.settings["icon_size"]))
-            self.update_buttons()
-            self.save_settings()
-
-    def inc_icon_size(self):
-        # Increase the icon font size
-        if self.settings["icon_size"] < 40:
-            self.settings["icon_size"] += 1
+    def edit_icon_size(self, n):
+        # Edit the icon font size
+        if 8 < self.settings["icon_size"] < 40:
+            self.settings["icon_size"] += n
             self.lbl_icon_font.config(text=str(self.settings["icon_size"]))
             self.update_buttons()
             self.save_settings()
