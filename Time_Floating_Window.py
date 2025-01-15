@@ -324,14 +324,14 @@ class FloatingClockApp():
         self.alpha_entry.bind("<Return>", lambda e: self.alpha_entry_apply())
         r += 1
 
-        chk_l = tk.BooleanVar(value=self.settings["show_buttons_when_locked"])
-        ttk.Label(frm, text=self.texts["show_buttons_when_locked"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
-        ttk.Checkbutton(frm, variable=chk_l, command=lambda: self.swbl(chk_l.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
-        r += 1
-
         chk_u = tk.BooleanVar(value=self.settings["show_buttons_when_unlocked"])
         ttk.Label(frm, text=self.texts["show_buttons_when_unlocked"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         ttk.Checkbutton(frm, variable=chk_u, command=lambda: self.swbu(chk_u.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        r += 1
+
+        chk_l = tk.BooleanVar(value=self.settings["show_buttons_when_locked"])
+        ttk.Label(frm, text=self.texts["show_buttons_when_locked"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        ttk.Checkbutton(frm, variable=chk_l, command=lambda: self.swbl(chk_l.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
         r += 1
 
         ttk.Label(frm, text=self.texts["lang_switch"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
