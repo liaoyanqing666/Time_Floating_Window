@@ -3,9 +3,9 @@ Windows上的时间悬浮窗, Time floating window on Windows
 
 使用Python，Tkinter和pyinstaller, made with Python, Tkinter, and pyinstaller
 
-<div style="text-align: center;">
+<p align="center">
     <img src="images/gif_1.gif" alt="GIF" width="200"/>
-</div>
+</p>
 
 **English Introduction:**
 
@@ -20,20 +20,20 @@ Below, I'll give you a detailed overview of the app, with instructions in both *
 下面，我将告诉你详细介绍这个应用程序，包括**英语**和**中文**说明。如果你只是想使用，只需要点击右侧**Releases**，下载最新版本（exe）即可（支持中文），注意可以右键打开设置。
 
 **Examples**:
-<div style="text-align: center;">
-    <img src="images/img_1.png" alt="Movie" width="800" />
-    <p>Watching a movie (left lower)</p>
-</div>
+<p align="center">
+    <img src="images/img_1.png" alt="Movie" width="600" />
+</p>
+<p align="center">Watching a movie (left lower)</p>
 
-<div style="text-align: center;">
-    <img src="images/gif_2.gif" alt="Movie" width="800" />
-    <p>Move and lock the window</p>
-</div>
+<p align="center">
+    <img src="images/gif_2.gif" alt="Movie" width="600" />
+</p>
+<p align="center">Move and lock the window</p>
 
-<div style="text-align: center;">
-    <img src="images/img_2.png" alt="Movie" width="800" />
-    <p>Remove the system time and use Time Window instead</p>
-</div>
+<p align="center">
+    <img src="images/img_2.png" alt="Movie" width="600" />
+</p>
+<p align="center">Remove the system time and use Time Window instead</p>
 
 ---
 
@@ -203,7 +203,7 @@ pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow .\Tim
 
 可执行文件（`.exe`）将位于 `dist` 文件夹内。
 
-#### 你可以随意创建这个存储库并进行改进。如果你发现了bug，想要添加新的语言翻译，或者对新功能有想法，请提issue或提交pull request。
+#### 你可以随意fork这个存储库并进行改进。如果你发现了bug，想要添加新的语言翻译，或者对新功能有想法，请提issue或提交pull request。
 
 ---
 
