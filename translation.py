@@ -15,6 +15,7 @@ all_translations = \
     "en": {
         "language_code": "en",
         "lang_label": "English",
+        "app_name": "Time Window",
         "bg_color": "Background Color",
         "text_color": "Text Color",
         "bg_opacity": "Background Opacity",
@@ -41,11 +42,15 @@ all_translations = \
         "lang_changed_hint": "Language changed, please reopen settings or restart.",
         "confirm": "Confirm",
         "info": "Info",
-        "lang_switch_confirm": "Are you sure you want to switch to {language}? The application will close."
+        "lang_switch_confirm": "Are you sure you want to switch to {language}? The application will close.",
+        "create_desktop_shortcut_confirm": "Create desktop shortcut?",
+        "create_menu_shortcut_confirm": "Create start menu shortcut?",
+        "error": "Error",
     },
     "zh": {
         "language_code": "zh",
         "lang_label": "中文",
+        "app_name": "时间悬浮窗",
         "bg_color": "背景颜色",
         "text_color": "文字颜色",
         "bg_opacity": "背景透明度",
@@ -72,6 +77,9 @@ all_translations = \
         "lang_changed_hint": "语言已更改，请重新打开设置或重启。",
         "confirm": "确认",
         "info": "提示",
-        "lang_switch_confirm": "确定要切换到{language}语言吗？应用程序将关闭。"
+        "lang_switch_confirm": "确定要切换到{language}语言吗？应用程序将关闭。",
+        "create_desktop_shortcut_confirm": "是否创建桌面快捷方式？",
+        "create_menu_shortcut_confirm": "是否创建开始菜单快捷方式？",
+        "error": "错误",
     }
 }

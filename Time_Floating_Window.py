@@ -10,26 +10,62 @@ import sys
 import win32com.client
 import winreg as reg
 
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except:
+        return False
+
+def run_as_admin():
+    if not is_admin():
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable.replace('python.exe', 'pythonw.exe'), ' '.join(sys.argv), None, 1)
+        sys.exit()
+
 class FloatingClockApp():
     def __init__(self):
         self.config_file = "TimeWindowSettings.json"
-        self.load_settings()
+        first_run = self.load_settings()
+        self.init_language()
         self.root = tk.Tk()
         self.root.withdraw()
-        self.init_language()
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
         self.settings.setdefault("max_width", self.screen_width)
         self.settings.setdefault("max_height", self.screen_height)
         self.settings_window = None  # To track if settings window is open
-        self.create_window()
+        self.create_window(first_run)
+
+    def first_run(self):
+        # Ask the user if they want to create a desktop shortcut
+        desktop = win32com.client.Dispatch("WScript.Shell").SpecialFolders("Desktop")
+        if messagebox.askyesno(self.texts["confirm"], self.texts["create_desktop_shortcut_confirm"]):
+            self.create_shortcut(desktop)
+        start_menu = os.path.join(os.environ['PROGRAMDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs')
+        print(start_menu)
+        if messagebox.askyesno(self.texts["confirm"], self.texts["create_menu_shortcut_confirm"]):
+            self.create_shortcut(start_menu)
+
+    def create_shortcut(self, path=None):
+        # Create a desktop shortcut for the application
+        # try:
+        shortcut_path = os.path.join(path, self.texts["app_name"] + ".lnk")
+        shell = win32com.client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(shortcut_path)
+        shortcut.Targetpath = sys.executable
+        shortcut.WorkingDirectory = os.path.dirname(sys.executable)
+        shortcut.IconLocation = sys.executable
+        shortcut.save()
+        # except Exception as e:
+        #     messagebox.showerror(self.texts["error"], str(e))
 
     def load_settings(self):
-        # Load settings from file or use defaults
+        # Load settings from file or use defaults, return whether it's the first run
         if os.path.exists(self.config_file):
             with open(self.config_file, "r", encoding="utf-8") as f:
                 self.settings = json.load(f)
+            return False
         else:
+            run_as_admin() # Run as admin at the first run to create shortcuts
             self.settings = {
                 "bg_color": "#000000",
                 "text_color": "#FFFFFF",
@@ -49,6 +85,7 @@ class FloatingClockApp():
                 "settings_window_size": None,
                 "settings_window_position": None,
             }
+            return True
 
     def save_settings(self):
         with open(self.config_file, "w", encoding="utf-8") as f:
@@ -63,15 +100,12 @@ class FloatingClockApp():
         self.available_languages = [val["lang_label"] for val in self.translations.values()] # get all language labels
         self.texts = self.translations.get(self.lang, self.translations["en"])
 
-    def create_window(self):
+    def create_window(self, first_run):
         # Create the floating window
         self.floating_window = tk.Toplevel(self.root)
         self.floating_window.title("Floating Clock")
         self.floating_window.overrideredirect(True)
-        self.floating_window.attributes("-topmost", True)
-        self.floating_window.bind("<FocusOut>", lambda e: self.keep_on_top())
         self.update_geometry()
-        self.floating_window.attributes("-alpha", self.settings["bg_opacity"])
         if os.name == "nt":
             hwnd = ctypes.windll.user32.GetParent(self.floating_window.winfo_id())
             style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
@@ -127,6 +161,11 @@ class FloatingClockApp():
         self.floating_window.bind("<B1-Motion>", self.drag_move)
 
         self.update_time()
+        if first_run:
+            self.first_run()
+        self.floating_window.attributes("-topmost", True)
+        self.floating_window.bind("<FocusOut>", lambda e: self.keep_on_top())
+        self.floating_window.attributes("-alpha", self.settings["bg_opacity"])
 
     def arrange_buttons(self):
         # Place the buttons according to the settings
@@ -612,5 +651,8 @@ class FloatingClockApp():
     def run(self):
         self.root.mainloop()
 
+
+
 if __name__ == "__main__":
+    # start with admin rights
     FloatingClockApp().run()
