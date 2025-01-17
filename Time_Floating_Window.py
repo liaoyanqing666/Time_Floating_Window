@@ -47,16 +47,16 @@ class FloatingClockApp():
 
     def create_shortcut(self, path=None):
         # Create a desktop shortcut for the application
-        # try:
-        shortcut_path = os.path.join(path, self.texts["app_name"] + ".lnk")
-        shell = win32com.client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut(shortcut_path)
-        shortcut.Targetpath = sys.executable
-        shortcut.WorkingDirectory = os.path.dirname(sys.executable)
-        shortcut.IconLocation = sys.executable
-        shortcut.save()
-        # except Exception as e:
-        #     messagebox.showerror(self.texts["error"], str(e))
+        try:
+            shortcut_path = os.path.join(path, self.texts["app_name"] + ".lnk")
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut(shortcut_path)
+            shortcut.Targetpath = sys.executable
+            shortcut.WorkingDirectory = os.path.dirname(sys.executable)
+            shortcut.IconLocation = sys.executable
+            shortcut.save()
+        except Exception as e:
+            messagebox.showerror(self.texts["error"], str(e))
 
     def load_settings(self):
         # Load settings from file or use defaults, return whether it's the first run
@@ -297,12 +297,17 @@ class FloatingClockApp():
 
         chk_u = tk.BooleanVar(value=self.settings["show_buttons_when_unlocked"])
         ttk.Label(frm, text=self.texts["show_buttons_when_unlocked"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
-        ttk.Checkbutton(frm, variable=chk_u, command=lambda: self.swbu(chk_u.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        ttk.Checkbutton(frm, variable=chk_u, command=lambda: self.show_button_unlocked(chk_u.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
         r += 1
 
-        chk_l = tk.BooleanVar(value=self.settings["show_buttons_when_locked"])
+        chkl = tk.BooleanVar(value=self.settings["show_buttons_when_locked"])
         ttk.Label(frm, text=self.texts["show_buttons_when_locked"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
-        ttk.Checkbutton(frm, variable=chk_l, command=lambda: self.swbl(chk_l.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        ttk.Checkbutton(frm, variable=chkl, command=lambda: self.show_button_locked(chkl.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        r += 1
+
+        autostart = tk.BooleanVar(value=self.check_autostart())
+        ttk.Label(frm, text=self.texts["auto_start"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        ttk.Checkbutton(frm, variable=autostart, command=lambda: self.set_autostart(autostart.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
         r += 1
 
         ttk.Label(frm, text=self.texts["lang_switch"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
@@ -443,12 +448,12 @@ class FloatingClockApp():
             messagebox.showinfo(self.texts["info"], self.texts["restore_done"])
             self.quit_app()
 
-    def swbl(self, v):
+    def show_button_locked(self, v):
         self.settings["show_buttons_when_locked"] = v
         self.arrange_buttons()
         self.save_settings()
 
-    def swbu(self, v):
+    def show_button_unlocked(self, v):
         self.settings["show_buttons_when_unlocked"] = v
         self.arrange_buttons()
         self.save_settings()
@@ -648,10 +653,38 @@ class FloatingClockApp():
                 self.settings["settings_window_size"] = None
                 self.quit_app()
 
+    def check_autostart(self):
+        # Check if the application is set to autostart
+        try:
+            program_name = self.texts["app_name"]
+            program_path = sys.executable
+            reg_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+            reg_key = reg.HKEY_CURRENT_USER
+            key = reg.OpenKey(reg_key, reg_path, 0, reg.KEY_READ)
+            value, _ = reg.QueryValueEx(key, program_name)
+            reg.CloseKey(key)
+            return value == program_path
+
+        except FileNotFoundError:
+            return False
+
+    def set_autostart(self, enable=True):
+        # Set the application to autostart
+        program_name = self.texts["app_name"]
+        program_path = sys.executable
+        reg_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        reg_key = reg.HKEY_CURRENT_USER
+        key = reg.OpenKey(reg_key, reg_path, 0, reg.KEY_WRITE)
+
+        if enable:
+            reg.SetValueEx(key, program_name, 0, reg.REG_SZ, program_path)
+        else:
+            reg.DeleteValue(key, program_name)
+
+        reg.CloseKey(key)
+
     def run(self):
         self.root.mainloop()
-
-
 
 if __name__ == "__main__":
     # start with admin rights
