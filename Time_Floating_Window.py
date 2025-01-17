@@ -3,9 +3,10 @@ import webbrowser
 from tkinter import ttk, colorchooser, messagebox
 from tkinter.font import families
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import ctypes
+import ntplib
 import translation
 import sys
 import win32com.client
@@ -390,6 +391,16 @@ class FloatingClockApp():
         self.sync_entry.bind("<KeyRelease>", lambda e: self.change_sync_interval(self.sync_entry.get()))
         r += 1
 
+        ttk.Label(frm, text=self.texts["time_excursion"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        time_excursion_frame = ttk.Frame(frm)
+        self.time_excursion_entry = ttk.Entry(time_excursion_frame, width=10)
+        time_excursion_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        self.time_excursion_entry.insert(0, str(self.settings["time_excursion"]))
+        self.time_excursion_entry.pack(side="left", padx=5)
+        ttk.Button(time_excursion_frame, text=self.texts["online_sync"], command=lambda: self.update_time(online=True)).pack(side="left")
+        self.time_excursion_entry.bind("<KeyRelease>", lambda e: self.change_time_excursion(self.time_excursion_entry.get()))
+        r += 1
+
         ttk.Button(frm, text=self.texts["restore_default"], command=self.restore_default).grid(row=r, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         r += 1
 
@@ -561,6 +572,10 @@ class FloatingClockApp():
         except ValueError:
             current = self.settings["width"]
         new_width = current + n
+        if new_width < self.min_label_w():
+            new_width = self.min_label_w()
+        elif new_width > self.settings["max_width"]:
+            new_width = self.settings["max_width"]
         self.width_entry.delete(0, tk.END)
         self.width_entry.insert(0, str(new_width))
         self.change_width(str(new_width))
@@ -572,6 +587,10 @@ class FloatingClockApp():
         except ValueError:
             current = self.settings["height"]
         new_height = current + n
+        if new_height < self.min_label_h():
+            new_height = self.min_label_h()
+        elif new_height > self.settings["max_height"]:
+            new_height = self.settings["max_height"]
         self.height_entry.delete(0, tk.END)
         self.height_entry.insert(0, str(new_height))
         self.change_height(str(new_height))
@@ -598,6 +617,13 @@ class FloatingClockApp():
         if v.isdigit():
             i = int(v)
             self.settings["sync_interval"] = max(1, i)
+            self.save_settings()
+
+    def change_time_excursion(self, v):
+        # Change the time excursion
+        if v.isdigit():
+            i = int(v)
+            self.settings["time_excursion"] = i
             self.save_settings()
 
     def update_buttons(self):
@@ -656,9 +682,23 @@ class FloatingClockApp():
         sw, sh = self.floating_window.winfo_screenwidth(), self.floating_window.winfo_screenheight()
         return 0 <= cx <= sw and 0 <= cy <= sh
 
-    def update_time(self):
+    def update_time(self, online=False):
         # Update the time label
+        if online:
+            try:
+                c = ntplib.NTPClient()
+                response = c.request('pool.ntp.org')
+                network_time = datetime.fromtimestamp(response.tx_time)
+                now = datetime.now()
+                round_trip_delay = response.delay
+                self.settings["time_excursion"] = int(((now - network_time).total_seconds() + round_trip_delay/2) * 1000)
+                self.time_excursion_entry.delete(0, tk.END)
+                self.time_excursion_entry.insert(0, str(self.settings["time_excursion"]))
+                self.save_settings()
+            except Exception as e:
+                print(e)
         now = datetime.now()
+        now += timedelta(milliseconds=self.settings["time_excursion"])
         if int(self.settings["time_precision_digits"]) > 0:
             formatted_time = now.strftime("%H:%M:%S.%f")[: -6 + int(self.settings["time_precision_digits"])]
         else:
