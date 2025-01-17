@@ -77,13 +77,14 @@ class FloatingClockApp():
                 "icon_size": 10,
                 "is_movable": True,
                 "last_position": None,
-                "time_precision": "seconds",
-                "sync_interval": 1000,
+                "sync_interval": 100,
                 "language": "default",
                 "show_buttons_when_locked": True,
                 "show_buttons_when_unlocked": True,
                 "settings_window_size": None,
                 "settings_window_position": None,
+                "time_excursion": 0,
+                "time_precision_digits": 0,
             }
             return True
 
@@ -344,11 +345,11 @@ class FloatingClockApp():
         ttk.Button(fic, text="+1", command=lambda: self.edit_icon_size(1)).pack(side="left")
         r += 1
 
-        pcv = [self.texts["seconds"], self.texts["milliseconds"]]
+        pcv = [self.texts["seconds"], "100" + self.texts["milliseconds"], "10" + self.texts["milliseconds"], self.texts["milliseconds"]]
         ttk.Label(frm, text=self.texts["precision"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         combo_tp = ttk.Combobox(frm, values=pcv, state="readonly")
         combo_tp.bind("<MouseWheel>", lambda e: "break")
-        combo_tp.set(self.texts[self.settings["time_precision"]])
+        combo_tp.set(pcv[int(self.settings["time_precision_digits"])])
         combo_tp.grid(row=r, column=1, padx=10, pady=5, sticky="w")
         combo_tp.bind("<<ComboboxSelected>>", lambda e: self.change_precision_by_text(combo_tp.get()))
         r += 1
@@ -502,13 +503,21 @@ class FloatingClockApp():
 
     def change_precision_by_text(self, txt):
         # Change the time precision
-        self.set_precision("milliseconds" if txt == self.texts["milliseconds"] else "seconds")
+        if txt == self.texts["seconds"]:
+            self.set_precision(0)
+        elif txt == "100" + self.texts["milliseconds"]:
+            self.set_precision(1)
+        elif txt == "10" + self.texts["milliseconds"]:
+            self.set_precision(2)
+        elif txt == self.texts["milliseconds"]:
+            self.set_precision(3)
+        else:
+            self.set_precision(0)
 
     def set_precision(self, p):
         # Set the time precision and adjust the window size if necessary
-        self.settings["time_precision"] = p
-        self.settings["sync_interval"] = 100 if p == "milliseconds" else 1000
-        if p == "milliseconds" and self.settings["width"] < self.min_label_w():
+        self.settings["time_precision_digits"] = p
+        if self.settings["width"] < self.min_label_w():
             self.settings["width"] = self.min_label_w()
             self.update_geometry()
         self.save_settings()
@@ -576,20 +585,20 @@ class FloatingClockApp():
     def min_label_w(self):
         # Get the minimum width of the time label to ensure the text fits
         original_text = self.time_label.cget("text")
-        test_text = "88:88:88.888" if self.settings["time_precision"] == "milliseconds" else "88:88:88"
+        test_text = "88:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
         self.time_label.config(text=test_text)
         self.floating_window.update_idletasks()
-        lw = self.time_label.winfo_reqwidth() + 40
+        lw = self.time_label.winfo_reqwidth()
         self.time_label.config(text=original_text)
         return lw
 
     def min_label_h(self):
         # Get the minimum height of the time label to ensure the text fits
         original_text = self.time_label.cget("text")
-        test_text = "88:88:88.888" if self.settings["time_precision"] == "milliseconds" else "88:88:88"
+        test_text = "88:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
         self.time_label.config(text=test_text)
         self.floating_window.update_idletasks()
-        lh = self.time_label.winfo_reqheight() + 20
+        lh = self.time_label.winfo_reqheight()
         self.time_label.config(text=original_text)
         return lh
 
@@ -627,8 +636,8 @@ class FloatingClockApp():
     def update_time(self):
         # Update the time label
         now = datetime.now()
-        if self.settings["time_precision"] == "milliseconds":
-            formatted_time = now.strftime("%H:%M:%S.%f")[:-3]
+        if int(self.settings["time_precision_digits"]) > 0:
+            formatted_time = now.strftime("%H:%M:%S.%f")[: -6 + int(self.settings["time_precision_digits"])]
         else:
             formatted_time = now.strftime("%H:%M:%S")
         self.time_label.config(text=formatted_time)
