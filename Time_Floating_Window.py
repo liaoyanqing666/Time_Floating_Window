@@ -1,4 +1,5 @@
 import tkinter as tk
+import webbrowser
 from tkinter import ttk, colorchooser, messagebox
 from tkinter.font import families
 import json
@@ -383,6 +384,12 @@ class FloatingClockApp():
         ttk.Button(frm, text=self.texts["restore_default"], command=self.restore_default).grid(row=r, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         r += 1
 
+        ttk.Button(frm, text=self.texts["project_link"], command=lambda: webbrowser.open('https://github.com/liaoyanqing666/Time_Floating_Window')).grid(row=r, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        r += 1
+
+        ttk.Button(frm, text=self.texts["author"], command=lambda: webbrowser.open('https://github.com/liaoyanqing666')).grid(row=r, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
+        r += 1
+
     def font_mouse_wheel(self, e):
         # Enable mouse wheel scrolling for the font combobox
         self.inc_font() if e.delta > 0 else self.dec_font()
@@ -585,7 +592,7 @@ class FloatingClockApp():
     def min_label_w(self):
         # Get the minimum width of the time label to ensure the text fits
         original_text = self.time_label.cget("text")
-        test_text = "88:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
+        test_text = "89:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
         self.time_label.config(text=test_text)
         self.floating_window.update_idletasks()
         lw = self.time_label.winfo_reqwidth()
@@ -595,7 +602,7 @@ class FloatingClockApp():
     def min_label_h(self):
         # Get the minimum height of the time label to ensure the text fits
         original_text = self.time_label.cget("text")
-        test_text = "88:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
+        test_text = "89:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
         self.time_label.config(text=test_text)
         self.floating_window.update_idletasks()
         lh = self.time_label.winfo_reqheight()

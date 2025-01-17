@@ -37,6 +37,9 @@ all_translations = \
         "show_buttons_when_unlocked": "Show Buttons When Unlocked",
         "auto_start": "Auto Start",
         "lang_switch": "Language",
+        "time_excursion": "Time Excursion (+/- ms)",
+        "refresh_frequency": "Refresh Frequency (ms)",
+        "online_sync": "Online Sync",
         "restore_default": "Restore Default",
         "restore_confirm": "Restore default settings?",
         "restore_done": "Default settings restored. Please reopen the settings window.",
@@ -47,6 +50,8 @@ all_translations = \
         "create_desktop_shortcut_confirm": "Create desktop shortcut?",
         "create_menu_shortcut_confirm": "Create start menu shortcut?",
         "error": "Error",
+        "project_link": "Project Link (Welcome to star)",
+        "author": "Author: liaoyanqing666",
     },
     "zh": {
         "language_code": "zh",
@@ -73,6 +78,9 @@ all_translations = \
         "show_buttons_when_unlocked": "解锁时显示按钮",
         "auto_start": "开机自启动",
         "lang_switch": "语言",
+        "time_excursion": "时间偏移（+/- ms）",
+        "refresh_frequency": "刷新频率（ms）",
+        "online_sync": "在线同步",
         "restore_default": "恢复默认",
         "restore_confirm": "是否恢复默认设置？",
         "restore_done": "默认设置已恢复。请重新打开设置窗口。",
@@ -83,5 +91,7 @@ all_translations = \
         "create_desktop_shortcut_confirm": "是否创建桌面快捷方式？",
         "create_menu_shortcut_confirm": "是否创建开始菜单快捷方式？",
         "error": "错误",
+        "project_link": "项目链接（欢迎star）",
+        "author": "作者：liaoyanqing666",
     }
 }
