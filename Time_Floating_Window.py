@@ -381,6 +381,15 @@ class FloatingClockApp():
         self.height_entry.bind("<KeyRelease>", lambda e: self.change_height(self.height_entry.get()))
         r += 1
 
+        ttk.Label(frm, text=self.texts["sync_interval"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        sync_frame = ttk.Frame(frm)
+        self.sync_entry = ttk.Entry(sync_frame, width=10)
+        sync_frame.grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        self.sync_entry.insert(0, str(self.settings["sync_interval"]))
+        self.sync_entry.pack(side="left", padx=5)
+        self.sync_entry.bind("<KeyRelease>", lambda e: self.change_sync_interval(self.sync_entry.get()))
+        r += 1
+
         ttk.Button(frm, text=self.texts["restore_default"], command=self.restore_default).grid(row=r, column=0, columnspan=2, padx=10, pady=5, sticky="ew")
         r += 1
 
@@ -582,6 +591,13 @@ class FloatingClockApp():
             self.settings["icon_size"] += n
             self.lbl_icon_font.config(text=str(self.settings["icon_size"]))
             self.update_buttons()
+            self.save_settings()
+
+    def change_sync_interval(self, v):
+        # Change the sync interval
+        if v.isdigit():
+            i = int(v)
+            self.settings["sync_interval"] = max(1, i)
             self.save_settings()
 
     def update_buttons(self):
