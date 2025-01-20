@@ -185,14 +185,14 @@ git clone https://github.com/liaoyanqing666/Time_Floating_Window.git
 本项目使用了 `Tkinter`（Python自带）。如果你的Python版本不包含 `Tkinter`，你可以使用以下命令安装：
 
 ```bash
-pip install -r requirements.txt
+pip install python-tk
 ```
 
 #### 3. 使用PyInstaller打包
 安装好所有依赖后，你可以使用 `pyinstaller` 将应用打包成Windows可执行文件。首先安装 `pyinstaller`：
 
 ```bash
-pip install python-tk
+pip install pyinstaller
 ```
 
 然后，使用以下命令创建可执行文件：
