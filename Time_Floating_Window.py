@@ -690,8 +690,11 @@ class FloatingClockApp():
                 response = c.request('pool.ntp.org')
                 network_time = datetime.fromtimestamp(response.tx_time)
                 now = datetime.now()
-                round_trip_delay = response.delay
-                self.settings["time_excursion"] = int(((now - network_time).total_seconds() + round_trip_delay/2) * 1000)
+                # # with delay
+                # round_trip_delay = response.delay
+                # self.settings["time_excursion"] = int(((now - network_time).total_seconds() + round_trip_delay/2) * 1000)
+                # without delay
+                self.settings["time_excursion"] = int((now - network_time).total_seconds() * 1000)
                 self.time_excursion_entry.delete(0, tk.END)
                 self.time_excursion_entry.insert(0, str(self.settings["time_excursion"]))
                 self.save_settings()
