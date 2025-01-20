@@ -19,6 +19,8 @@ Below, I'll give you a detailed overview of the app, with instructions in both *
 
 下面，我将告诉你详细介绍这个应用程序，包括**英语**和**中文**说明。如果你只是想使用，只需要点击右侧**Releases**，下载最新版本（exe）即可（支持中文），注意可以右键打开设置。
 
+想要获得更加详细的中文介绍，可以的访问[*功能详解*](https://blog.csdn.net/m0_61718615/article/details/145261677)，和[*开发代码介绍*](https://blog.csdn.net/m0_61718615/article/details/145265002)。
+
 **Examples**:
 <p align="center">
     <img src="images/img_1.png" alt="Movie" width="600" />
