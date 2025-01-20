@@ -47,9 +47,12 @@ Below, I'll give you a detailed overview of the app, with instructions in both *
   - Choose your preferred font and font size.
 - **Resizable Window**: Dynamically adjust the clock's width and height.
 - **Lock and Unlock**: Move the clock freely when unlocked, or lock it in place.
+- **Set Delay**: Manually set the time increment or automatically sync with the network.
 - **Language Support**: Automatically detects system language and allows manual language switching. Now supports English and Chinese, and you are welcome to add more languages.
 - **Settings Persistence**: Automatically saves all settings (colors, position, size) to `TimeWindowSettings.json` and restores them on restart.
 - **Context Menu**: Right-click to access settings, lock/unlock, and quit options.
+- **First Launch**: Determine whether it is the first launch by reading whether there is a json file. When it is the first launch, it will ask if you need to add related shortcuts.
+- **Auto-Start**: Choose whether to start automatically when the computer starts.
 
 ### Usage
 
@@ -127,16 +130,19 @@ The executable (`.exe`) will be located in the `dist` folder.
 
 ### 功能
 
-- **实时显示**：以秒或毫秒为单位显示当前时间。
+- **实时显示**：以1秒，100毫秒，10毫秒，1毫秒为单位显示当前时间。
 - **可自定义外观**：
   - 更改时钟的背景和文字颜色。
   - 调整透明度。
   - 选择你喜欢的字体和字体大小。
 - **可调整窗口大小**：动态调整时钟的宽度和高度。
 - **锁定和解锁**：解锁时可以自由移动时钟，或者锁定位置。
+- **可设置延迟**：可以手动设置时间更改量，也可以通过网络同步自动设置。
 - **语言支持**：自动检测系统语言，并允许手动切换语言。现支持英语和中文，你也可以添加更多语言。
 - **设置持久化**：自动保存所有设置（颜色、位置、大小）到 `TimeWindowSettings.json` 文件，并在重启时恢复。
 - **右键菜单**：右键点击可访问设置、锁定/解锁和关闭选项。
+- **首次启动**：通过读取是否有json文件判断是否为首次启动。首次启动时，会询问是否需要添加相关快捷方式。
+- **自启动**：可以选择是否开机自启动。
 
 ### 使用方法
 
