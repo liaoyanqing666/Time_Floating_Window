@@ -597,20 +597,26 @@ class FloatingClockApp():
 
     def edit_time_font(self, n):
         # Edit the time font size
-        if 8 < self.settings["time_font_size"] < 72:
-            self.settings["time_font_size"] += n
-            self.lbl_time_font.config(text=str(self.settings["time_font_size"]))
-            self.time_label.config(font=(self.settings["font_family"], self.settings["time_font_size"]))
-            self.save_settings()
-            self.check_size_for_font_change()
+        self.settings["time_font_size"] += n
+        if self.settings["time_font_size"] < 8:
+            self.settings["time_font_size"] = 8
+        elif self.settings["time_font_size"] > 72:
+            self.settings["time_font_size"] = 72
+        self.lbl_time_font.config(text=str(self.settings["time_font_size"]))
+        self.time_label.config(font=(self.settings["font_family"], self.settings["time_font_size"]))
+        self.save_settings()
+        self.check_size_for_font_change()
 
     def edit_icon_size(self, n):
         # Edit the icon font size
-        if 8 < self.settings["icon_size"] < 40:
-            self.settings["icon_size"] += n
-            self.lbl_icon_font.config(text=str(self.settings["icon_size"]))
-            self.update_buttons()
-            self.save_settings()
+        self.settings["icon_size"] += n
+        if self.settings["icon_size"] < 8:
+            self.settings["icon_size"] = 8
+        elif self.settings["icon_size"] > 72:
+            self.settings["icon_size"] = 72
+        self.lbl_icon_font.config(text=str(self.settings["icon_size"]))
+        self.update_buttons()
+        self.save_settings()
 
     def change_sync_interval(self, v):
         # Change the sync interval

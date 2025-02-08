@@ -3,3 +3,5 @@ dist/
 *.json
 *.spec
 .idea/
+.vscode/
+__pycache__/
