@@ -620,17 +620,21 @@ class FloatingClockApp():
 
     def change_sync_interval(self, v):
         # Change the sync interval
-        if v.isdigit():
+        try:
             i = int(v)
             self.settings["sync_interval"] = max(1, i)
             self.save_settings()
+        except ValueError:
+            pass
 
     def change_time_excursion(self, v):
         # Change the time excursion
-        if v.isdigit():
+        try:
             i = int(v)
             self.settings["time_excursion"] = i
             self.save_settings()
+        except ValueError:
+            pass
 
     def update_buttons(self):
         # Update the font size of the buttons
