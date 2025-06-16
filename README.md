@@ -115,6 +115,12 @@ Then, to create the executable, run:
 pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow .\Time_Floating_Window.py
 ```
 
+If there is a problem with the above-mentioned files, the command to package all the packages needed is:
+
+```bash
+pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow_all_python_attached --collect-all tkinter --collect-all ntplib --collect-all win32com --collect-all win32api --collect-all win32con --collect-all pywintypes Time_Floating_Window.py
+```
+
 Here are some common `PyInstaller` flags you might use:
 - `--onefile`: Optional. Package everything into a single executable file.
 - `--noconsole`: Prevent the console window from showing (useful for GUI-only apps).
@@ -201,6 +207,12 @@ pip install pyinstaller
 
 ```bash
 pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow .\Time_Floating_Window.py
+```
+
+如果上述文件出现问题，则把所有需要用到的包全打包的命令为：
+
+```bash
+pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow_all_python_attached --collect-all tkinter --collect-all ntplib --collect-all win32com --collect-all win32api --collect-all win32con --collect-all pywintypes Time_Floating_Window.py
 ```
 
 `PyInstaller` 参数介绍：
