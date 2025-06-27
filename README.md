@@ -206,13 +206,13 @@ pip install pyinstaller
 然后，使用以下命令创建可执行文件：
 
 ```bash
-pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow .\Time_Floating_Window.py
+pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow --version-file=version.txt .\Time_Floating_Window.py
 ```
 
 如果上述文件出现问题，则把所有需要用到的包全打包的命令为：
 
 ```bash
-pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow_all_python_attached --collect-all tkinter --collect-all ntplib --collect-all win32com --collect-all win32api --collect-all win32con --collect-all pywintypes Time_Floating_Window.py
+pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow_all_python_attached --version-file=version.txt --collect-all tkinter --collect-all ntplib --collect-all win32com --collect-all win32api --collect-all win32con --collect-all pywintypes Time_Floating_Window.py
 ```
 
 `PyInstaller` 参数介绍：

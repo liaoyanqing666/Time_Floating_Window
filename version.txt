@@ -1,0 +1,29 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 1, 1, 0),
+    prodvers=(1, 1, 1, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x4,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '040904B0',
+        [
+          StringStruct('CompanyName', 'liaoyanqing666'),
+          StringStruct('FileVersion', '1.1.1'),
+          StringStruct('InternalName', 'Time_Floating_Window'),
+          StringStruct('OriginalFilename', 'TimeWindow.exe'),
+          StringStruct('ProductName', 'Time Floating Window'),
+          StringStruct('ProductVersion', '1.1.1'),
+          StringStruct('LegalCopyright', '© liaoyanqing666 2025')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
