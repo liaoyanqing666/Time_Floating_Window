@@ -20,12 +20,16 @@ def is_admin():
 
 def run_as_admin():
     if not is_admin():
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable.replace('python.exe', 'pythonw.exe'), ' '.join(sys.argv), None, 1)
+        exe = sys.executable
+        if exe.endswith("python.exe") or exe.endswith("pythonw.exe"):
+            # dev mode
+            exe = exe.replace("python.exe", "pythonw.exe")
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, ' '.join(sys.argv), None, 1)
         sys.exit()
 
 class FloatingClockApp():
     def __init__(self):
-        self.config_file = "TimeWindowSettings.json"
+        self.config_file = os.path.join(os.path.dirname(sys.executable), "TimeWindowSettings.json")
         first_run = self.load_settings()
         self.init_language()
         self.root = tk.Tk()
