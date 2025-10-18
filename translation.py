@@ -25,16 +25,20 @@ all_translations = \
         "seconds": "Seconds",
         "milliseconds": "Milliseconds",
         "settings": "Settings",
-        "settings_hw": "445x465",
+        "settings_hw": "445x520",  # 增加高度以适应新选项
         "choose_color": "Choose Color",
         "lock": "Lock",
         "unlock": "Unlock",
         "close": "Close",
         "time_font_size": "Time Font Size",
+        "date_font_size": "Date Font Size",  # 新增：日期字体大小
         "icon_font_size": "Icon Font Size",
         "font_label": "Font (Scroll)",
         "show_buttons_when_locked": "Show Buttons When Locked",
         "show_buttons_when_unlocked": "Show Buttons When Unlocked",
+        "show_date": "Show Date",  # 新增：显示日期
+        "show_seconds": "Show Seconds",  # 新增：显示秒
+        "hide_seconds": "Hide Seconds",  # 新增：隐藏秒（右键菜单）
         "auto_start": "Auto Start",
         "lang_switch": "Language",
         "time_excursion": "Time Excursion (+/- ms)",
@@ -66,16 +70,20 @@ all_translations = \
         "seconds": "秒",
         "milliseconds": "毫秒",
         "settings": "设置",
-        "settings_hw": "370x645",
+        "settings_hw": "370x700",  # 增加高度以适应新选项
         "choose_color": "选择颜色",
         "lock": "锁定",
         "unlock": "解锁",
         "close": "关闭",
         "time_font_size": "时间字体大小",
+        "date_font_size": "日期字体大小",  # 新增：日期字体大小
         "icon_font_size": "图标大小",
         "font_label": "字体（滚动选择）",
         "show_buttons_when_locked": "锁定时显示按钮",
         "show_buttons_when_unlocked": "解锁时显示按钮",
+        "show_date": "显示日期",  # 新增：显示日期
+        "show_seconds": "显示秒",  # 新增：显示秒
+        "hide_seconds": "隐藏秒",  # 新增：隐藏秒（右键菜单）
         "auto_start": "开机自启动",
         "lang_switch": "语言",
         "time_excursion": "时间偏移（+/- ms）",
