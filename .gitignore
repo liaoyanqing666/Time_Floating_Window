@@ -1,6 +1,7 @@
 build/
 dist/
 *.json
+TimeWindowSettings.json.*.bak
 *.spec
 .idea/
 .vscode/

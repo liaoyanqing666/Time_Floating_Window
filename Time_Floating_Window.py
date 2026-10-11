@@ -13,6 +13,7 @@ import win32com.client
 import winreg as reg
 import queue
 import threading
+import subprocess
 
 def is_admin():
     try:
@@ -23,11 +24,15 @@ def is_admin():
 def run_as_admin():
     if not is_admin():
         exe = sys.executable
-        if exe.endswith("python.exe") or exe.endswith("pythonw.exe"):
+        if getattr(sys, 'frozen', False):
+            args = sys.argv[1:]
+        else:
             # dev mode
             exe = exe.replace("python.exe", "pythonw.exe")
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, ' '.join(sys.argv), None, 1)
-        sys.exit()
+            args = [os.path.abspath(__file__)] + sys.argv[1:]
+        result = ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, subprocess.list2cmdline(args), None, 1)
+        if result > 32:
+            sys.exit()
 
 class FloatingClockApp():
     def __init__(self):
@@ -67,13 +72,18 @@ class FloatingClockApp():
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(shortcut_path)
             shortcut.Targetpath = sys.executable
-            shortcut.WorkingDirectory = os.path.dirname(sys.executable)
+            if getattr(sys, 'frozen', False):
+                shortcut.WorkingDirectory = os.path.dirname(sys.executable)
+            else:
+                script_path = os.path.abspath(__file__)
+                shortcut.Arguments = subprocess.list2cmdline([script_path])
+                shortcut.WorkingDirectory = os.path.dirname(script_path)
             shortcut.IconLocation = sys.executable
             shortcut.save()
         except Exception as e:
             messagebox.showerror(self.texts["error"], str(e))
 
-    def load_settings(self):
+    def load_settings(self, request_admin=True):
         # Load settings from file or use defaults, return whether it's the first run
         self.settings = {
             "bg_color": "#000000",
@@ -99,14 +109,26 @@ class FloatingClockApp():
             "show_seconds": True,  # Added: whether to show seconds
         }
         if os.path.exists(self.config_file):
-            with open(self.config_file, "r", encoding="utf-8") as f:
-                self.settings.update(json.load(f))
+            try:
+                with open(self.config_file, "r", encoding="utf-8") as f:
+                    saved_settings = json.load(f)
+                if not isinstance(saved_settings, dict):
+                    raise ValueError("Invalid settings format")
+                self.settings.update(saved_settings)
+            except ValueError:
+                # Keep a backup of damaged settings before using defaults
+                backup_file = self.config_file + "." + datetime.now().strftime("%Y%m%d%H%M%S%f") + ".bak"
+                os.rename(self.config_file, backup_file)
             interval = self.settings["sync_interval"]
             if not isinstance(interval, int) or not 1 <= interval <= 2147483647:
                 self.settings["sync_interval"] = 500
+            precision = self.settings["time_precision_digits"]
+            if not isinstance(precision, int) or not 0 <= precision <= 3:
+                self.settings["time_precision_digits"] = 0
             return False
         else:
-            run_as_admin() # Run as admin at the first run to create shortcuts
+            if request_admin:
+                run_as_admin() # Run as admin at the first run to create shortcuts
             return True
 
     def save_settings(self):
@@ -119,6 +141,8 @@ class FloatingClockApp():
         else:
             self.lang = self.settings["language"]
         self.translations = translation.all_translations
+        if not isinstance(self.lang, str) or self.lang not in self.translations:
+            self.lang = "en"
         self.available_languages = [val["lang_label"] for val in self.translations.values()] # get all language labels
         self.texts = self.translations.get(self.lang, self.translations["en"])
 
@@ -567,10 +591,10 @@ class FloatingClockApp():
         if messagebox.askyesno(self.texts["confirm"], self.texts["restore_confirm"]):
             if os.path.exists(self.config_file):
                 os.remove(self.config_file)
-            self.load_settings()
+            self.load_settings(request_admin=False)
             self.save_settings()
             messagebox.showinfo(self.texts["info"], self.texts["restore_done"])
-            self.quit_app()
+            self.quit_app(save_position=False)
 
     def show_button_locked(self, v):
         self.settings["show_buttons_when_locked"] = v
@@ -865,7 +889,7 @@ class FloatingClockApp():
         now = datetime.now()
         try:
             now += timedelta(milliseconds=self.settings["time_excursion"])
-        except (OverflowError, TypeError):
+        except (OverflowError, TypeError, ValueError):
             self.settings["time_excursion"] = 0
             self.save_settings()
         
@@ -907,12 +931,13 @@ class FloatingClockApp():
         self.save_settings()
         self.update_time()
 
-    def quit_app(self):
+    def quit_app(self, save_position=True):
         # Quit the application
         if self.time_update_id is not None:
             self.floating_window.after_cancel(self.time_update_id)
             self.time_update_id = None
-        self.settings["last_position"] = [self.floating_window.winfo_x(), self.floating_window.winfo_y()]
+        if save_position:
+            self.settings["last_position"] = [self.floating_window.winfo_x(), self.floating_window.winfo_y()]
         self.save_settings()
         if self.settings_window and tk.Toplevel.winfo_exists(self.settings_window):
             self.settings_window.destroy()
@@ -929,35 +954,58 @@ class FloatingClockApp():
                 self.settings["settings_window_size"] = None
                 self.quit_app()
 
+    def _autostart_command(self):
+        # Quote executable and script paths for Windows startup
+        program_path = f'"{sys.executable}"'
+        if not getattr(sys, "frozen", False):
+            program_path += f' "{os.path.abspath(__file__)}"'
+        return program_path
+
     def check_autostart(self):
         # Check if the application is set to autostart
+        program_names = ["TimeWindow"] + [texts["app_name"] for texts in self.translations.values()]
+        program_path = self._autostart_command()
+        reg_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+        reg_key = reg.HKEY_CURRENT_USER
         try:
-            program_name = self.texts["app_name"]
-            program_path = sys.executable
-            reg_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
-            reg_key = reg.HKEY_CURRENT_USER
             key = reg.OpenKey(reg_key, reg_path, 0, reg.KEY_READ)
-            value, _ = reg.QueryValueEx(key, program_name)
-            reg.CloseKey(key)
-            return value == program_path
-
         except FileNotFoundError:
             return False
+        try:
+            for program_name in program_names:
+                try:
+                    value, _ = reg.QueryValueEx(key, program_name)
+                except FileNotFoundError:
+                    continue
+                if value == program_path or (getattr(sys, "frozen", False) and value == sys.executable):
+                    return True
+            return False
+        finally:
+            reg.CloseKey(key)
 
     def set_autostart(self, enable=True):
         # Set the application to autostart
-        program_name = self.texts["app_name"]
-        program_path = sys.executable
+        program_names = ["TimeWindow"] + [texts["app_name"] for texts in self.translations.values()]
         reg_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
         reg_key = reg.HKEY_CURRENT_USER
-        key = reg.OpenKey(reg_key, reg_path, 0, reg.KEY_WRITE)
-
-        if enable:
-            reg.SetValueEx(key, program_name, 0, reg.REG_SZ, program_path)
-        else:
-            reg.DeleteValue(key, program_name)
-
-        reg.CloseKey(key)
+        try:
+            if enable:
+                key = reg.CreateKeyEx(reg_key, reg_path, 0, reg.KEY_WRITE)
+            else:
+                key = reg.OpenKey(reg_key, reg_path, 0, reg.KEY_WRITE)
+        except FileNotFoundError:
+            return
+        try:
+            if enable:
+                reg.SetValueEx(key, "TimeWindow", 0, reg.REG_SZ, self._autostart_command())
+                program_names.remove("TimeWindow")
+            for program_name in program_names:
+                try:
+                    reg.DeleteValue(key, program_name)
+                except FileNotFoundError:
+                    pass
+        finally:
+            reg.CloseKey(key)
 
     def run(self):
         self.root.mainloop()
