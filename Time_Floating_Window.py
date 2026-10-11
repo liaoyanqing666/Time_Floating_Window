@@ -58,11 +58,11 @@ class FloatingClockApp():
     def first_run(self):
         # Ask the user if they want to create a desktop shortcut
         desktop = win32com.client.Dispatch("WScript.Shell").SpecialFolders("Desktop")
-        if messagebox.askyesno(self.texts["confirm"], self.texts["create_desktop_shortcut_confirm"]):
+        if messagebox.askyesno(self.texts["confirm"], self.texts["create_desktop_shortcut_confirm"], parent=self.floating_window):
             self.create_shortcut(desktop)
         start_menu = os.path.join(os.environ['PROGRAMDATA'], 'Microsoft', 'Windows', 'Start Menu', 'Programs')
         print(start_menu)
-        if messagebox.askyesno(self.texts["confirm"], self.texts["create_menu_shortcut_confirm"]):
+        if messagebox.askyesno(self.texts["confirm"], self.texts["create_menu_shortcut_confirm"], parent=self.floating_window):
             self.create_shortcut(start_menu)
 
     def create_shortcut(self, path=None):
@@ -240,6 +240,7 @@ class FloatingClockApp():
         if condition:
             self.pin_button.place(relx=0.05, rely=0.05, anchor="nw")
             self.close_button.place(relx=0.95, rely=0.05, anchor="ne")
+            self.check_size_for_font_change()
         else:
             self.pin_button.place_forget()
             self.close_button.place_forget()
@@ -588,12 +589,12 @@ class FloatingClockApp():
 
     def restore_default(self):
         # When the user clicks the Restore Default Settings button, confirm and restore
-        if messagebox.askyesno(self.texts["confirm"], self.texts["restore_confirm"]):
+        if messagebox.askyesno(self.texts["confirm"], self.texts["restore_confirm"], parent=self.settings_window):
             if os.path.exists(self.config_file):
                 os.remove(self.config_file)
             self.load_settings(request_admin=False)
             self.save_settings()
-            messagebox.showinfo(self.texts["info"], self.texts["restore_done"])
+            messagebox.showinfo(self.texts["info"], self.texts["restore_done"], parent=self.settings_window)
             self.quit_app(save_position=False)
 
     def show_button_locked(self, v):
@@ -608,7 +609,7 @@ class FloatingClockApp():
 
     def pick_bg_color(self):
         # Open the color chooser dialog and set the background color
-        c = colorchooser.askcolor()[1]
+        c = colorchooser.askcolor(parent=self.settings_window)[1]
         if c:
             self.settings["bg_color"] = c
             for widget in [self.floating_window, self.time_label, self.date_label, self.pin_button, self.close_button, self.main_frame]:
@@ -617,7 +618,7 @@ class FloatingClockApp():
 
     def pick_text_color(self):
         # Open the color chooser dialog and set the text color
-        c = colorchooser.askcolor()[1]
+        c = colorchooser.askcolor(parent=self.settings_window)[1]
         if c:
             self.settings["text_color"] = c
             for widget in [self.time_label, self.date_label, self.pin_button, self.close_button]:
@@ -750,6 +751,7 @@ class FloatingClockApp():
             self.settings["icon_size"] = 72
         self.lbl_icon_font.config(text=str(self.settings["icon_size"]))
         self.update_buttons()
+        self.check_size_for_font_change()
         self.save_settings()
 
     def change_sync_interval(self, v):
@@ -800,6 +802,11 @@ class FloatingClockApp():
         time_width = self.time_label.winfo_reqwidth()
         date_width = self.date_label.winfo_reqwidth() if self.settings.get("show_date", True) else 0
         lw = max(time_width, date_width)
+        if (self.is_movable and self.settings["show_buttons_when_unlocked"]) or \
+                (not self.is_movable and self.settings["show_buttons_when_locked"]):
+            # Leave space for the buttons and their side margins
+            button_width = max(self.pin_button.winfo_reqwidth(), self.close_button.winfo_reqwidth())
+            lw = int((lw + 2 * button_width) / 0.9) + 1
         
         # Restore original texts
         self.time_label.config(text=original_time_text)
@@ -949,7 +956,7 @@ class FloatingClockApp():
         found_key = next((k for k, v in self.translations.items() if v["lang_label"] == lb), None)
         if found_key and found_key != self.lang:
             confirm_message = self.texts["lang_switch_confirm"].format(language=lb)
-            if messagebox.askyesno(self.texts["confirm"], confirm_message):
+            if messagebox.askyesno(self.texts["confirm"], confirm_message, parent=self.settings_window):
                 self.settings["language"] = found_key
                 self.settings["settings_window_size"] = None
                 self.quit_app()
