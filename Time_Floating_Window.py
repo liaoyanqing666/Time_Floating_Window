@@ -130,8 +130,9 @@ class FloatingClockApp():
         self.update_geometry()
         if os.name == "nt":
             hwnd = ctypes.windll.user32.GetParent(self.floating_window.winfo_id())
-            style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
-            ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x80000)
+            current_style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)  # GWL_EXSTYLE
+            ctypes.windll.user32.SetWindowLongW(hwnd, -20, current_style | 0x00080000)  # WS_EX_LAYERED
+            ctypes.windll.user32.SetWindowLongW(hwnd, -20, current_style | 0x00080000 | 0x00000080)  # WS_EX_TOOLWINDOW
             ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 2, ctypes.byref(ctypes.c_int(2)), 4)
 
         # If the window was moved before, apply the position
