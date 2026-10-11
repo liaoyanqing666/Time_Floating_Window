@@ -11,6 +11,8 @@ import translation
 import sys
 import win32com.client
 import winreg as reg
+import queue
+import threading
 
 def is_admin():
     try:
@@ -29,7 +31,11 @@ def run_as_admin():
 
 class FloatingClockApp():
     def __init__(self):
-        self.config_file = os.path.join(os.path.dirname(sys.executable), "TimeWindowSettings.json")
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable) # After packaging: Use the directory where the program is located
+        else:
+            base_path = os.path.dirname(os.path.abspath(__file__)) # During development: Use the directory where the script is located
+        self.config_file = os.path.join(base_path, "TimeWindowSettings.json")
         first_run = self.load_settings()
         self.init_language()
         self.root = tk.Tk()
@@ -39,6 +45,9 @@ class FloatingClockApp():
         self.settings.setdefault("max_width", self.screen_width)
         self.settings.setdefault("max_height", self.screen_height)
         self.settings_window = None  # To track if settings window is open
+        self.time_update_id = None  # To track the time refresh timer
+        self.time_sync_queue = queue.Queue()
+        self.sync_in_progress = False
         self.create_window(first_run)
 
     def first_run(self):
@@ -66,35 +75,38 @@ class FloatingClockApp():
 
     def load_settings(self):
         # Load settings from file or use defaults, return whether it's the first run
+        self.settings = {
+            "bg_color": "#000000",
+            "text_color": "#FFFFFF",
+            "bg_opacity": 1.0,
+            "width": 210,
+            "height": 80,  # Increase the default height to fit the date display
+            "font_family": "Consolas",
+            "time_font_size": 19,
+            "date_font_size": 15,  # Added: date font size
+            "icon_size": 10,
+            "is_movable": True,
+            "last_position": None,
+            "sync_interval": 500,  # Default refresh interval (milliseconds)
+            "language": "default",
+            "show_buttons_when_locked": True,
+            "show_buttons_when_unlocked": True,
+            "settings_window_size": None,
+            "settings_window_position": None,
+            "time_excursion": 0,
+            "time_precision_digits": 0,
+            "show_date": True,  # Added: whether to show the date
+            "show_seconds": True,  # Added: whether to show seconds
+        }
         if os.path.exists(self.config_file):
             with open(self.config_file, "r", encoding="utf-8") as f:
-                self.settings = json.load(f)
+                self.settings.update(json.load(f))
+            interval = self.settings["sync_interval"]
+            if not isinstance(interval, int) or not 1 <= interval <= 2147483647:
+                self.settings["sync_interval"] = 500
             return False
         else:
             run_as_admin() # Run as admin at the first run to create shortcuts
-            self.settings = {
-                "bg_color": "#000000",
-                "text_color": "#FFFFFF",
-                "bg_opacity": 1.0,
-                "width": 210,
-                "height": 80,  # 增加默认高度以容纳日期显示
-                "font_family": "Consolas",
-                "time_font_size": 19,
-                "date_font_size": 15,  # 新增：日期字体大小
-                "icon_size": 10,
-                "is_movable": True,
-                "last_position": None,
-                "sync_interval": 500,  # 改为默认10秒（10000毫秒）
-                "language": "default",
-                "show_buttons_when_locked": True,
-                "show_buttons_when_unlocked": True,
-                "settings_window_size": None,
-                "settings_window_position": None,
-                "time_excursion": 0,
-                "time_precision_digits": 0,
-                "show_date": True,  # 新增：是否显示日期
-                "show_seconds": True,  # 新增：是否显示秒
-            }
             return True
 
     def save_settings(self):
@@ -153,7 +165,8 @@ class FloatingClockApp():
             bg=self.settings["bg_color"],
             fg=self.settings["text_color"]
         )
-        self.date_label.pack(pady=(0, 5))
+        if self.settings.get("show_date", True):
+            self.date_label.pack(pady=(0, 5))
 
         self.is_movable = self.settings["is_movable"]
 
@@ -188,6 +201,7 @@ class FloatingClockApp():
         self.floating_window.bind("<B1-Motion>", self.drag_move)
 
         self.update_time()
+        self.check_size_for_font_change()
         if first_run:
             self.first_run()
         self.floating_window.attributes("-topmost", True)
@@ -239,30 +253,24 @@ class FloatingClockApp():
         menu = tk.Menu(self.floating_window, tearoff=0)
         menu.add_command(label=self.texts["lock"] if self.is_movable else self.texts["unlock"], command=self.toggle_lock)
         
-        # 添加显示/隐藏秒的菜单项
+        # Add a menu item to show/hide seconds
         if self.settings.get("show_seconds", True):
             menu.add_command(label=self.texts["hide_seconds"], command=self.hide_seconds)
         else:
             menu.add_command(label=self.texts["show_seconds"], command=self.show_seconds)
         
-        menu.add_separator()  # 添加分隔线
+        menu.add_separator()  # Add a separator
         menu.add_command(label=self.texts["settings"], command=self.open_settings)
         menu.add_command(label=self.texts["close"], command=self.quit_app)
         menu.post(e.x_root, e.y_root)
 
     def hide_seconds(self):
-        """隐藏秒"""
-        self.settings["show_seconds"] = False
-        self.save_settings()
-        # 立即更新时间显示以反映变化
-        self.update_time()
+        """Hide seconds"""
+        self.toggle_show_seconds(False)
 
     def show_seconds(self):
-        """显示秒"""
-        self.settings["show_seconds"] = True
-        self.save_settings()
-        # 立即更新时间显示以反映变化
-        self.update_time()
+        """Show seconds"""
+        self.toggle_show_seconds(True)
 
     def open_settings(self):
         # Open the settings window only if it's not already open
@@ -344,13 +352,13 @@ class FloatingClockApp():
         self.alpha_entry.bind("<Return>", lambda e: self.alpha_entry_apply())
         r += 1
 
-        # 新增：日期显示开关
+        # Added: date display toggle
         show_date_var = tk.BooleanVar(value=self.settings.get("show_date", True))
         ttk.Label(frm, text=self.texts.get("show_date", "显示日期")).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         ttk.Checkbutton(frm, variable=show_date_var, command=lambda: self.toggle_show_date(show_date_var.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
         r += 1
 
-        # 新增：秒显示开关
+        # Added: seconds display toggle
         show_seconds_var = tk.BooleanVar(value=self.settings.get("show_seconds", True))
         ttk.Label(frm, text=self.texts.get("show_seconds", "显示秒")).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         ttk.Checkbutton(frm, variable=show_seconds_var, command=lambda: self.toggle_show_seconds(show_seconds_var.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
@@ -396,7 +404,7 @@ class FloatingClockApp():
         ttk.Button(ftf, text="+1", command=lambda: self.edit_time_font(1)).pack(side="left")
         r += 1
 
-        # 新增：日期字体大小设置
+        # Added: date font size setting
         ttk.Label(frm, text=self.texts.get("date_font_size", "日期字体大小")).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         fdf = ttk.Frame(frm)
         fdf.grid(row=r, column=1, padx=10, pady=5, sticky="w")
@@ -479,7 +487,7 @@ class FloatingClockApp():
         r += 1
 
     def toggle_show_date(self, show):
-        """切换日期显示状态"""
+        """Toggle the date display"""
         self.settings["show_date"] = show
         if show:
             self.date_label.pack(pady=(0, 5))
@@ -487,12 +495,14 @@ class FloatingClockApp():
             self.date_label.pack_forget()
         self.save_settings()
         self.check_size_for_font_change()
+        self.update_time()
 
     def toggle_show_seconds(self, show):
-        """切换秒显示状态"""
+        """Toggle the seconds display"""
         self.settings["show_seconds"] = show
         self.save_settings()
-        # 立即更新时间显示以反映变化
+        self.check_size_for_font_change()
+        # Update the time display immediately to reflect the change
         self.update_time()
 
     def font_mouse_wheel(self, e):
@@ -634,6 +644,7 @@ class FloatingClockApp():
             self.settings["width"] = self.min_label_w()
             self.update_geometry()
         self.save_settings()
+        self.update_time()
 
     def change_width(self, v):
         # Change the width of the window
@@ -720,8 +731,11 @@ class FloatingClockApp():
         # Change the sync interval
         try:
             i = int(v)
+            if i > 2147483647: # Avoid an invalid delay for the timer
+                return
             self.settings["sync_interval"] = max(1, i)
             self.save_settings()
+            self.update_time()
         except ValueError:
             pass
 
@@ -729,9 +743,11 @@ class FloatingClockApp():
         # Change the time excursion
         try:
             i = int(v)
+            datetime.now() + timedelta(milliseconds=i) # Check whether the adjusted time is valid
             self.settings["time_excursion"] = i
             self.save_settings()
-        except ValueError:
+            self.update_time()
+        except (ValueError, OverflowError):
             pass
 
     def update_buttons(self):
@@ -744,14 +760,14 @@ class FloatingClockApp():
         original_time_text = self.time_label.cget("text")
         original_date_text = self.date_label.cget("text")
         
-        # Test time width (根据是否显示秒来测试不同的文本)
+        # Test time width (use different text depending on whether seconds are shown)
         if self.settings.get("show_seconds", True):
             test_time_text = "89:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
         else:
             test_time_text = "89:88"
         self.time_label.config(text=test_time_text)
         
-        # Test date width (使用较长的日期格式测试)
+        # Test date width (use a longer date format)
         test_date_text = "8888-88-88 星期八" if self.settings.get("show_date", True) else ""
         self.date_label.config(text=test_date_text)
         
@@ -784,7 +800,7 @@ class FloatingClockApp():
         self.floating_window.update_idletasks()
         time_height = self.time_label.winfo_reqheight()
         date_height = self.date_label.winfo_reqheight() if self.settings.get("show_date", True) else 0
-        lh = time_height + date_height + 20  # 加上一些边距
+        lh = time_height + date_height + 20  # Add some padding
         
         # Restore original texts
         self.time_label.config(text=original_time_text)
@@ -825,21 +841,34 @@ class FloatingClockApp():
     def update_time(self, online=False):
         # Update the time label
         if online:
-            try:
-                c = ntplib.NTPClient()
-                response = c.request('pool.ntp.org')
-                network_time = datetime.fromtimestamp(response.tx_time)
-                now = datetime.now()
-                self.settings["time_excursion"] = int((now - network_time).total_seconds() * 1000)
-                self.time_excursion_entry.delete(0, tk.END)
-                self.time_excursion_entry.insert(0, str(self.settings["time_excursion"]))
-                self.save_settings()
-            except Exception as e:
-                print(e)
+            if self.sync_in_progress:
+                return
+            self.sync_in_progress = True
+
+            def sync_time():
+                # Request network time without blocking the window
+                try:
+                    c = ntplib.NTPClient()
+                    response = c.request('pool.ntp.org', timeout=5)
+                    self.time_sync_queue.put((round(response.offset * 1000), None))
+                except Exception as e:
+                    self.time_sync_queue.put((None, str(e)))
+
+            threading.Thread(target=sync_time, daemon=True).start()
+            self.floating_window.after(100, self.apply_time_sync)
+            return
+
+        if self.time_update_id is not None:
+            self.floating_window.after_cancel(self.time_update_id)
+            self.time_update_id = None
         now = datetime.now()
-        now += timedelta(milliseconds=self.settings["time_excursion"])
+        try:
+            now += timedelta(milliseconds=self.settings["time_excursion"])
+        except (OverflowError, TypeError):
+            self.settings["time_excursion"] = 0
+            self.save_settings()
         
-        # 更新时间显示（根据是否显示秒来选择格式）
+        # Update the time display (choose the format based on whether seconds are shown)
         if self.settings.get("show_seconds", True):
             if int(self.settings["time_precision_digits"]) > 0:
                 formatted_time = now.strftime("%H:%M:%S.%f")[: -6 + int(self.settings["time_precision_digits"])]
@@ -849,18 +878,39 @@ class FloatingClockApp():
             formatted_time = now.strftime("%H:%M")
         self.time_label.config(text=formatted_time)
         
-        # 更新日期显示
+        # Update the date display
         if self.settings.get("show_date", True):
-            # 中文格式：年-月-日 星期几
+            # Chinese format: year-month-day weekday
             weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
             weekday = weekdays[now.weekday()]
             formatted_date = now.strftime(f"%Y-%m-%d {weekday}")
             self.date_label.config(text=formatted_date)
         
-        self.floating_window.after(self.settings["sync_interval"], self.update_time)
+        self.time_update_id = self.floating_window.after(self.settings["sync_interval"], self.update_time)
+
+    def apply_time_sync(self):
+        # Apply the network correction in the main thread
+        try:
+            excursion, error = self.time_sync_queue.get_nowait()
+        except queue.Empty:
+            self.floating_window.after(100, self.apply_time_sync)
+            return
+        self.sync_in_progress = False
+        if error is not None:
+            messagebox.showerror(self.texts["error"], error, parent=self.floating_window)
+            return
+        self.settings["time_excursion"] = excursion
+        if self.settings_window and tk.Toplevel.winfo_exists(self.settings_window):
+            self.time_excursion_entry.delete(0, tk.END)
+            self.time_excursion_entry.insert(0, str(excursion))
+        self.save_settings()
+        self.update_time()
 
     def quit_app(self):
         # Quit the application
+        if self.time_update_id is not None:
+            self.floating_window.after_cancel(self.time_update_id)
+            self.time_update_id = None
         self.settings["last_position"] = [self.floating_window.winfo_x(), self.floating_window.winfo_y()]
         self.save_settings()
         if self.settings_window and tk.Toplevel.winfo_exists(self.settings_window):

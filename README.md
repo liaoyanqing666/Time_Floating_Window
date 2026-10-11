@@ -96,6 +96,12 @@ git clone https://github.com/liaoyanqing666/Time_Floating_Window.git
 ```
 
 #### 2. Install dependencies
+Install the NTP and Windows integration dependencies:
+
+```bash
+pip install ntplib pywin32
+```
+
 This project uses `Tkinter` (comes pre-installed with Python). If you are using simplified version of python without `Tkinter`, you can install it using:
 
 ```bash
@@ -112,13 +118,13 @@ pip install pyinstaller
 Then, to create the executable, run:
 
 ```bash
-pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow .\Time_Floating_Window.py
+pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow --version-file=version.txt .\Time_Floating_Window.py
 ```
 
 If there is a problem with the above-mentioned files, the command to package all the packages needed is:
 
 ```bash
-pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow_all_python_attached --collect-all tkinter --collect-all ntplib --collect-all win32com --collect-all win32api --collect-all win32con --collect-all pywintypes Time_Floating_Window.py
+pyinstaller --onefile --noconsole --icon=images/icon.ico --name TimeWindow_all_python_attached --version-file=version.txt --collect-all tkinter --collect-all ntplib --collect-all win32com --collect-all win32api --collect-all win32con --collect-all pywintypes Time_Floating_Window.py
 ```
 
 Here are some common `PyInstaller` flags you might use:
@@ -190,6 +196,12 @@ git clone https://github.com/liaoyanqing666/Time_Floating_Window.git
 ```
 
 #### 2. **安装依赖**
+先安装网络校时和 Windows 集成功能所需的依赖：
+
+```bash
+pip install ntplib pywin32
+```
+
 本项目使用了 `Tkinter`（Python自带）。如果你的Python版本不包含 `Tkinter`，你可以使用以下命令安装：
 
 ```bash
