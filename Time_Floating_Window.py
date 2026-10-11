@@ -1,7 +1,7 @@
 import tkinter as tk
 import webbrowser
 from tkinter import ttk, colorchooser, messagebox
-from tkinter.font import families
+from tkinter.font import families, Font
 import json
 from datetime import datetime, timedelta
 import os
@@ -90,10 +90,10 @@ class FloatingClockApp():
             "text_color": "#FFFFFF",
             "bg_opacity": 1.0,
             "width": 210,
-            "height": 80,  # Increase the default height to fit the date display
+            "height": 80,
             "font_family": "Consolas",
             "time_font_size": 19,
-            "date_font_size": 15,  # Added: date font size
+            "date_font_size": 15,
             "icon_size": 10,
             "is_movable": True,
             "last_position": None,
@@ -105,8 +105,8 @@ class FloatingClockApp():
             "settings_window_position": None,
             "time_excursion": 0,
             "time_precision_digits": 0,
-            "show_date": True,  # Added: whether to show the date
-            "show_seconds": True,  # Added: whether to show seconds
+            "show_date": True,
+            "show_seconds": True,
         }
         if os.path.exists(self.config_file):
             try:
@@ -190,7 +190,7 @@ class FloatingClockApp():
             bg=self.settings["bg_color"],
             fg=self.settings["text_color"]
         )
-        if self.settings.get("show_date", True):
+        if self.settings["show_date"]:
             self.date_label.pack(pady=(0, 5))
 
         self.is_movable = self.settings["is_movable"]
@@ -278,25 +278,11 @@ class FloatingClockApp():
         # Right click context menu
         menu = tk.Menu(self.floating_window, tearoff=0)
         menu.add_command(label=self.texts["lock"] if self.is_movable else self.texts["unlock"], command=self.toggle_lock)
-        
-        # Add a menu item to show/hide seconds
-        if self.settings.get("show_seconds", True):
-            menu.add_command(label=self.texts["hide_seconds"], command=self.hide_seconds)
-        else:
-            menu.add_command(label=self.texts["show_seconds"], command=self.show_seconds)
-        
-        menu.add_separator()  # Add a separator
+        menu.add_command(label=self.texts["hide_seconds"] if self.settings["show_seconds"] else self.texts["show_seconds"], command=lambda: self.toggle_show_seconds(not self.settings["show_seconds"]))
+        menu.add_separator()
         menu.add_command(label=self.texts["settings"], command=self.open_settings)
         menu.add_command(label=self.texts["close"], command=self.quit_app)
         menu.post(e.x_root, e.y_root)
-
-    def hide_seconds(self):
-        """Hide seconds"""
-        self.toggle_show_seconds(False)
-
-    def show_seconds(self):
-        """Show seconds"""
-        self.toggle_show_seconds(True)
 
     def open_settings(self):
         # Open the settings window only if it's not already open
@@ -378,16 +364,14 @@ class FloatingClockApp():
         self.alpha_entry.bind("<Return>", lambda e: self.alpha_entry_apply())
         r += 1
 
-        # Added: date display toggle
-        show_date_var = tk.BooleanVar(value=self.settings.get("show_date", True))
-        ttk.Label(frm, text=self.texts.get("show_date", "显示日期")).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        show_date_var = tk.BooleanVar(value=self.settings["show_date"])
+        ttk.Label(frm, text=self.texts["show_date"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         ttk.Checkbutton(frm, variable=show_date_var, command=lambda: self.toggle_show_date(show_date_var.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
         r += 1
 
-        # Added: seconds display toggle
-        show_seconds_var = tk.BooleanVar(value=self.settings.get("show_seconds", True))
-        ttk.Label(frm, text=self.texts.get("show_seconds", "显示秒")).grid(row=r, column=0, padx=10, pady=5, sticky="w")
-        ttk.Checkbutton(frm, variable=show_seconds_var, command=lambda: self.toggle_show_seconds(show_seconds_var.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
+        self.show_seconds_var = tk.BooleanVar(value=self.settings["show_seconds"])
+        ttk.Label(frm, text=self.texts["show_seconds"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        ttk.Checkbutton(frm, variable=self.show_seconds_var, command=lambda: self.toggle_show_seconds(self.show_seconds_var.get())).grid(row=r, column=1, padx=10, pady=5, sticky="w")
         r += 1
 
         chk_u = tk.BooleanVar(value=self.settings["show_buttons_when_unlocked"])
@@ -430,8 +414,7 @@ class FloatingClockApp():
         ttk.Button(ftf, text="+1", command=lambda: self.edit_time_font(1)).pack(side="left")
         r += 1
 
-        # Added: date font size setting
-        ttk.Label(frm, text=self.texts.get("date_font_size", "日期字体大小")).grid(row=r, column=0, padx=10, pady=5, sticky="w")
+        ttk.Label(frm, text=self.texts["date_font_size"]).grid(row=r, column=0, padx=10, pady=5, sticky="w")
         fdf = ttk.Frame(frm)
         fdf.grid(row=r, column=1, padx=10, pady=5, sticky="w")
         ttk.Button(fdf, text="-1", command=lambda: self.edit_date_font(-1)).pack(side="left")
@@ -513,7 +496,7 @@ class FloatingClockApp():
         r += 1
 
     def toggle_show_date(self, show):
-        """Toggle the date display"""
+        # Show or hide the date
         self.settings["show_date"] = show
         if show:
             self.date_label.pack(pady=(0, 5))
@@ -524,11 +507,12 @@ class FloatingClockApp():
         self.update_time()
 
     def toggle_show_seconds(self, show):
-        """Toggle the seconds display"""
+        # Show or hide seconds
         self.settings["show_seconds"] = show
+        if self.settings_window and tk.Toplevel.winfo_exists(self.settings_window):
+            self.show_seconds_var.set(show)
         self.save_settings()
         self.check_size_for_font_change()
-        # Update the time display immediately to reflect the change
         self.update_time()
 
     def font_mouse_wheel(self, e):
@@ -783,60 +767,32 @@ class FloatingClockApp():
             button.config(font=(self.settings["font_family"], self.settings["icon_size"]))
 
     def min_label_w(self):
-        # Get the minimum width of the time label to ensure the text fits
-        original_time_text = self.time_label.cget("text")
-        original_date_text = self.date_label.cget("text")
-        
-        # Test time width (use different text depending on whether seconds are shown)
-        if self.settings.get("show_seconds", True):
-            test_time_text = "89:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
-        else:
-            test_time_text = "89:88"
-        self.time_label.config(text=test_time_text)
-        
-        # Test date width (use a longer date format)
-        test_date_text = "8888-88-88 星期八" if self.settings.get("show_date", True) else ""
-        self.date_label.config(text=test_date_text)
-        
+        # Get the minimum width to ensure the time and date fit
+        txt = "89:88"
+        if self.settings["show_seconds"]:
+            txt += ":88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * self.settings["time_precision_digits"]
         self.floating_window.update_idletasks()
-        time_width = self.time_label.winfo_reqwidth()
-        date_width = self.date_label.winfo_reqwidth() if self.settings.get("show_date", True) else 0
-        lw = max(time_width, date_width)
+        font = Font(font=self.time_label.cget("font"))
+        # Include label padding without changing the displayed text
+        lw = font.measure(txt) + self.time_label.winfo_reqwidth() - font.measure(self.time_label.cget("text"))
+        if self.settings["show_date"]:
+            font = Font(font=self.date_label.cget("font"))
+            dw = max(font.measure("8888-88-88 " + day) for day in self.texts["weekdays"])
+            dw += self.date_label.winfo_reqwidth() - font.measure(self.date_label.cget("text"))
+            lw = max(lw, dw)
         if (self.is_movable and self.settings["show_buttons_when_unlocked"]) or \
                 (not self.is_movable and self.settings["show_buttons_when_locked"]):
             # Leave space for the buttons and their side margins
             button_width = max(self.pin_button.winfo_reqwidth(), self.close_button.winfo_reqwidth())
             lw = int((lw + 2 * button_width) / 0.9) + 1
-        
-        # Restore original texts
-        self.time_label.config(text=original_time_text)
-        self.date_label.config(text=original_date_text)
         return lw
 
     def min_label_h(self):
-        # Get the minimum height of the time label to ensure the text fits
-        original_time_text = self.time_label.cget("text")
-        original_date_text = self.date_label.cget("text")
-        
-        # Test time height
-        if self.settings.get("show_seconds", True):
-            test_time_text = "89:88:88" + ("." if self.settings["time_precision_digits"] > 0 else "") + "8" * int(self.settings["time_precision_digits"])
-        else:
-            test_time_text = "89:88"
-        self.time_label.config(text=test_time_text)
-        
-        # Test date height
-        test_date_text = "8888-88-88" if self.settings.get("show_date", True) else ""
-        self.date_label.config(text=test_date_text)
-        
+        # Get the minimum height to ensure the time and date fit
         self.floating_window.update_idletasks()
-        time_height = self.time_label.winfo_reqheight()
-        date_height = self.date_label.winfo_reqheight() if self.settings.get("show_date", True) else 0
-        lh = time_height + date_height + 20  # Add some padding
-        
-        # Restore original texts
-        self.time_label.config(text=original_time_text)
-        self.date_label.config(text=original_date_text)
+        lh = self.time_label.winfo_reqheight() + 20
+        if self.settings["show_date"]:
+            lh += self.date_label.winfo_reqheight()
         return lh
 
     def apply_position_or_center(self):
@@ -899,25 +855,17 @@ class FloatingClockApp():
         except (OverflowError, TypeError, ValueError):
             self.settings["time_excursion"] = 0
             self.save_settings()
-        
-        # Update the time display (choose the format based on whether seconds are shown)
-        if self.settings.get("show_seconds", True):
-            if int(self.settings["time_precision_digits"]) > 0:
-                formatted_time = now.strftime("%H:%M:%S.%f")[: -6 + int(self.settings["time_precision_digits"])]
-            else:
-                formatted_time = now.strftime("%H:%M:%S")
-        else:
+        if not self.settings["show_seconds"]:
             formatted_time = now.strftime("%H:%M")
+        elif self.settings["time_precision_digits"] > 0:
+            formatted_time = now.strftime("%H:%M:%S.%f")[: -6 + self.settings["time_precision_digits"]]
+        else:
+            formatted_time = now.strftime("%H:%M:%S")
         self.time_label.config(text=formatted_time)
-        
-        # Update the date display
-        if self.settings.get("show_date", True):
-            # Chinese format: year-month-day weekday
-            weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
-            weekday = weekdays[now.weekday()]
-            formatted_date = now.strftime(f"%Y-%m-%d {weekday}")
+        if self.settings["show_date"]:
+            weekday = self.texts["weekdays"][now.weekday()]
+            formatted_date = now.strftime("%Y-%m-%d ") + weekday
             self.date_label.config(text=formatted_date)
-        
         self.time_update_id = self.floating_window.after(self.settings["sync_interval"], self.update_time)
 
     def apply_time_sync(self):

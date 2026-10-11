@@ -24,20 +24,21 @@ all_translations = \
         "seconds": "Seconds",
         "milliseconds": "Milliseconds",
         "settings": "Settings",
-        "settings_hw": "445x520",  # Increase height to accommodate new options
+        "settings_hw": "445x520",
         "choose_color": "Choose Color",
         "lock": "Lock",
         "unlock": "Unlock",
         "close": "Close",
         "time_font_size": "Time Font Size",
-        "date_font_size": "Date Font Size",  # Added: date font size
+        "date_font_size": "Date Font Size",
         "icon_font_size": "Icon Font Size",
         "font_label": "Font (Scroll)",
         "show_buttons_when_locked": "Show Buttons When Locked",
         "show_buttons_when_unlocked": "Show Buttons When Unlocked",
-        "show_date": "Show Date",  # Added: show date
-        "show_seconds": "Show Seconds",  # Added: show seconds
-        "hide_seconds": "Hide Seconds",  # Added: hide seconds (context menu)
+        "show_date": "Show Date",
+        "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "show_seconds": "Show Seconds",
+        "hide_seconds": "Hide Seconds",
         "auto_start": "Auto Start",
         "lang_switch": "Language",
         "time_excursion": "Time Excursion (+/- ms)",
@@ -69,20 +70,21 @@ all_translations = \
         "seconds": "秒",
         "milliseconds": "毫秒",
         "settings": "设置",
-        "settings_hw": "370x745",  # Increase height to accommodate new options
+        "settings_hw": "370x745",
         "choose_color": "选择颜色",
         "lock": "锁定",
         "unlock": "解锁",
         "close": "关闭",
         "time_font_size": "时间字体大小",
-        "date_font_size": "日期字体大小",  # Added: date font size
+        "date_font_size": "日期字体大小",
         "icon_font_size": "图标大小",
         "font_label": "字体（滚动选择）",
         "show_buttons_when_locked": "锁定时显示按钮",
         "show_buttons_when_unlocked": "解锁时显示按钮",
-        "show_date": "显示日期",  # Added: show date
-        "show_seconds": "显示秒",  # Added: show seconds
-        "hide_seconds": "隐藏秒",  # Added: hide seconds (context menu)
+        "show_date": "显示日期",
+        "weekdays": ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"],
+        "show_seconds": "显示秒",
+        "hide_seconds": "隐藏秒",
         "auto_start": "开机自启动",
         "lang_switch": "语言",
         "time_excursion": "时间偏移（+/- ms）",
